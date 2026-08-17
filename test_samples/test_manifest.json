@@ -1,0 +1,74 @@
+{
+  "tests": [
+    {
+      "id": 1,
+      "name": "clean_1",
+      "description": "Ideal conditions: clean fills, no distortion",
+      "image": "test_001_clean_1.png",
+      "ground_truth": "test_001_clean_1_ground_truth.json"
+    },
+    {
+      "id": 2,
+      "name": "clean_2",
+      "description": "Ideal conditions: clean fills, no distortion",
+      "image": "test_002_clean_2.png",
+      "ground_truth": "test_002_clean_2_ground_truth.json"
+    },
+    {
+      "id": 3,
+      "name": "clean_3",
+      "description": "Ideal conditions: clean fills, no distortion",
+      "image": "test_003_clean_3.png",
+      "ground_truth": "test_003_clean_3_ground_truth.json"
+    },
+    {
+      "id": 4,
+      "name": "partial_fill",
+      "description": "Light/partial bubble fills \u2014 tests threshold sensitivity",
+      "image": "test_004_partial_fill.png",
+      "ground_truth": "test_004_partial_fill_ground_truth.json"
+    },
+    {
+      "id": 5,
+      "name": "multiple_marks",
+      "description": "Higher rate of multiple marks \u2014 tests invalid detection",
+      "image": "test_005_multiple_marks.png",
+      "ground_truth": "test_005_multiple_marks_ground_truth.json"
+    },
+    {
+      "id": 6,
+      "name": "perspective_skew",
+      "description": "Perspective distortion \u2014 simulates angled camera shot",
+      "image": "test_006_perspective_skew.png",
+      "ground_truth": "test_006_perspective_skew_ground_truth.json"
+    },
+    {
+      "id": 7,
+      "name": "rotated",
+      "description": "Slight rotation \u2014 simulates tilted phone capture",
+      "image": "test_007_rotated.png",
+      "ground_truth": "test_007_rotated_ground_truth.json"
+    },
+    {
+      "id": 8,
+      "name": "noisy",
+      "description": "Added Gaussian noise \u2014 simulates low-light camera sensor",
+      "image": "test_008_noisy.png",
+      "ground_truth": "test_008_noisy_ground_truth.json"
+    },
+    {
+      "id": 9,
+      "name": "shadow",
+      "description": "Diagonal shadow gradient \u2014 simulates hand shadow during capture",
+      "image": "test_009_shadow.png",
+      "ground_truth": "test_009_shadow_ground_truth.json"
+    },
+    {
+      "id": 10,
+      "name": "worst_case",
+      "description": "Combined: perspective + rotation + noise \u2014 hardest test case",
+      "image": "test_010_worst_case.png",
+      "ground_truth": "test_010_worst_case_ground_truth.json"
+    }
+  ]
+}

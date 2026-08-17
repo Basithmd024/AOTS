@@ -1,0 +1,252 @@
+{
+  "1": {
+    "question": 1,
+    "expected_selected": "A",
+    "expected_status": "ANSWERED"
+  },
+  "2": {
+    "question": 2,
+    "expected_selected": "MULTIPLE",
+    "expected_status": "INVALID_MULTIPLE_FILLS"
+  },
+  "3": {
+    "question": 3,
+    "expected_selected": "A",
+    "expected_status": "ANSWERED"
+  },
+  "4": {
+    "question": 4,
+    "expected_selected": "B",
+    "expected_status": "ANSWERED"
+  },
+  "5": {
+    "question": 5,
+    "expected_selected": null,
+    "expected_status": "UNANSWERED"
+  },
+  "6": {
+    "question": 6,
+    "expected_selected": "B",
+    "expected_status": "ANSWERED"
+  },
+  "7": {
+    "question": 7,
+    "expected_selected": "B",
+    "expected_status": "ANSWERED"
+  },
+  "8": {
+    "question": 8,
+    "expected_selected": "D",
+    "expected_status": "ANSWERED"
+  },
+  "9": {
+    "question": 9,
+    "expected_selected": "D",
+    "expected_status": "ANSWERED"
+  },
+  "10": {
+    "question": 10,
+    "expected_selected": "D",
+    "expected_status": "ANSWERED"
+  },
+  "11": {
+    "question": 11,
+    "expected_selected": "A",
+    "expected_status": "ANSWERED"
+  },
+  "12": {
+    "question": 12,
+    "expected_selected": "A",
+    "expected_status": "ANSWERED"
+  },
+  "13": {
+    "question": 13,
+    "expected_selected": "A",
+    "expected_status": "ANSWERED"
+  },
+  "14": {
+    "question": 14,
+    "expected_selected": "D",
+    "expected_status": "ANSWERED"
+  },
+  "15": {
+    "question": 15,
+    "expected_selected": "D",
+    "expected_status": "ANSWERED"
+  },
+  "16": {
+    "question": 16,
+    "expected_selected": "D",
+    "expected_status": "ANSWERED"
+  },
+  "17": {
+    "question": 17,
+    "expected_selected": "A",
+    "expected_status": "ANSWERED"
+  },
+  "18": {
+    "question": 18,
+    "expected_selected": "A",
+    "expected_status": "ANSWERED"
+  },
+  "19": {
+    "question": 19,
+    "expected_selected": "B",
+    "expected_status": "ANSWERED"
+  },
+  "20": {
+    "question": 20,
+    "expected_selected": "B",
+    "expected_status": "ANSWERED"
+  },
+  "21": {
+    "question": 21,
+    "expected_selected": "B",
+    "expected_status": "ANSWERED"
+  },
+  "22": {
+    "question": 22,
+    "expected_selected": "C",
+    "expected_status": "ANSWERED"
+  },
+  "23": {
+    "question": 23,
+    "expected_selected": "C",
+    "expected_status": "ANSWERED"
+  },
+  "24": {
+    "question": 24,
+    "expected_selected": "D",
+    "expected_status": "ANSWERED"
+  },
+  "25": {
+    "question": 25,
+    "expected_selected": "A",
+    "expected_status": "ANSWERED"
+  },
+  "26": {
+    "question": 26,
+    "expected_selected": "C",
+    "expected_status": "ANSWERED"
+  },
+  "27": {
+    "question": 27,
+    "expected_selected": "B",
+    "expected_status": "ANSWERED"
+  },
+  "28": {
+    "question": 28,
+    "expected_selected": "B",
+    "expected_status": "ANSWERED"
+  },
+  "29": {
+    "question": 29,
+    "expected_selected": "MULTIPLE",
+    "expected_status": "INVALID_MULTIPLE_FILLS"
+  },
+  "30": {
+    "question": 30,
+    "expected_selected": "B",
+    "expected_status": "ANSWERED"
+  },
+  "31": {
+    "question": 31,
+    "expected_selected": null,
+    "expected_status": "UNANSWERED"
+  },
+  "32": {
+    "question": 32,
+    "expected_selected": "C",
+    "expected_status": "ANSWERED"
+  },
+  "33": {
+    "question": 33,
+    "expected_selected": "C",
+    "expected_status": "ANSWERED"
+  },
+  "34": {
+    "question": 34,
+    "expected_selected": "C",
+    "expected_status": "ANSWERED"
+  },
+  "35": {
+    "question": 35,
+    "expected_selected": "A",
+    "expected_status": "ANSWERED"
+  },
+  "36": {
+    "question": 36,
+    "expected_selected": "A",
+    "expected_status": "ANSWERED"
+  },
+  "37": {
+    "question": 37,
+    "expected_selected": "C",
+    "expected_status": "ANSWERED"
+  },
+  "38": {
+    "question": 38,
+    "expected_selected": "A",
+    "expected_status": "ANSWERED"
+  },
+  "39": {
+    "question": 39,
+    "expected_selected": "B",
+    "expected_status": "ANSWERED"
+  },
+  "40": {
+    "question": 40,
+    "expected_selected": "C",
+    "expected_status": "ANSWERED"
+  },
+  "41": {
+    "question": 41,
+    "expected_selected": "A",
+    "expected_status": "ANSWERED"
+  },
+  "42": {
+    "question": 42,
+    "expected_selected": "A",
+    "expected_status": "ANSWERED"
+  },
+  "43": {
+    "question": 43,
+    "expected_selected": "A",
+    "expected_status": "ANSWERED"
+  },
+  "44": {
+    "question": 44,
+    "expected_selected": "B",
+    "expected_status": "ANSWERED"
+  },
+  "45": {
+    "question": 45,
+    "expected_selected": "C",
+    "expected_status": "ANSWERED"
+  },
+  "46": {
+    "question": 46,
+    "expected_selected": "C",
+    "expected_status": "ANSWERED"
+  },
+  "47": {
+    "question": 47,
+    "expected_selected": "A",
+    "expected_status": "ANSWERED"
+  },
+  "48": {
+    "question": 48,
+    "expected_selected": "C",
+    "expected_status": "ANSWERED"
+  },
+  "49": {
+    "question": 49,
+    "expected_selected": "B",
+    "expected_status": "ANSWERED"
+  },
+  "50": {
+    "question": 50,
+    "expected_selected": "D",
+    "expected_status": "ANSWERED"
+  }
+}

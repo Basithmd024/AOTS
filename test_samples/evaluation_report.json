@@ -1,0 +1,119 @@
+{
+  "overall_accuracy_pct": 100.0,
+  "overall_correct": 500,
+  "overall_total": 500,
+  "target_accuracy": 98.0,
+  "target_met": true,
+  "tests": [
+    {
+      "test_id": 1,
+      "name": "clean_1",
+      "status": "OK",
+      "accuracy_pct": 100.0,
+      "correct": 50,
+      "total": 50,
+      "processing_time": 0.034,
+      "confidence": 0.981,
+      "mismatch_count": 0
+    },
+    {
+      "test_id": 2,
+      "name": "clean_2",
+      "status": "OK",
+      "accuracy_pct": 100.0,
+      "correct": 50,
+      "total": 50,
+      "processing_time": 0.016,
+      "confidence": 0.965,
+      "mismatch_count": 0
+    },
+    {
+      "test_id": 3,
+      "name": "clean_3",
+      "status": "OK",
+      "accuracy_pct": 100.0,
+      "correct": 50,
+      "total": 50,
+      "processing_time": 0.015,
+      "confidence": 0.955,
+      "mismatch_count": 0
+    },
+    {
+      "test_id": 4,
+      "name": "partial_fill",
+      "status": "OK",
+      "accuracy_pct": 100.0,
+      "correct": 50,
+      "total": 50,
+      "processing_time": 0.014,
+      "confidence": 0.962,
+      "mismatch_count": 0
+    },
+    {
+      "test_id": 5,
+      "name": "multiple_marks",
+      "status": "OK",
+      "accuracy_pct": 100.0,
+      "correct": 50,
+      "total": 50,
+      "processing_time": 0.016,
+      "confidence": 0.894,
+      "mismatch_count": 0
+    },
+    {
+      "test_id": 6,
+      "name": "perspective_skew",
+      "status": "OK",
+      "accuracy_pct": 100.0,
+      "correct": 50,
+      "total": 50,
+      "processing_time": 0.016,
+      "confidence": 0.915,
+      "mismatch_count": 0
+    },
+    {
+      "test_id": 7,
+      "name": "rotated",
+      "status": "OK",
+      "accuracy_pct": 100.0,
+      "correct": 50,
+      "total": 50,
+      "processing_time": 0.017,
+      "confidence": 0.972,
+      "mismatch_count": 0
+    },
+    {
+      "test_id": 8,
+      "name": "noisy",
+      "status": "OK",
+      "accuracy_pct": 100.0,
+      "correct": 50,
+      "total": 50,
+      "processing_time": 0.03,
+      "confidence": 0.996,
+      "mismatch_count": 0
+    },
+    {
+      "test_id": 9,
+      "name": "shadow",
+      "status": "OK",
+      "accuracy_pct": 100.0,
+      "correct": 50,
+      "total": 50,
+      "processing_time": 0.015,
+      "confidence": 0.987,
+      "mismatch_count": 0
+    },
+    {
+      "test_id": 10,
+      "name": "worst_case",
+      "status": "OK",
+      "accuracy_pct": 100.0,
+      "correct": 50,
+      "total": 50,
+      "processing_time": 0.03,
+      "confidence": 0.952,
+      "mismatch_count": 0
+    }
+  ]
+}
