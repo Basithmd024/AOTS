@@ -12,7 +12,7 @@
       "accuracy_pct": 100.0,
       "correct": 50,
       "total": 50,
-      "processing_time": 0.019,
+      "processing_time": 0.025,
       "confidence": 0.981,
       "mismatch_count": 0
     },
@@ -23,7 +23,7 @@
       "accuracy_pct": 100.0,
       "correct": 50,
       "total": 50,
-      "processing_time": 0.016,
+      "processing_time": 0.019,
       "confidence": 0.965,
       "mismatch_count": 0
     },
@@ -34,7 +34,7 @@
       "accuracy_pct": 100.0,
       "correct": 50,
       "total": 50,
-      "processing_time": 0.015,
+      "processing_time": 0.017,
       "confidence": 0.955,
       "mismatch_count": 0
     },
@@ -45,7 +45,7 @@
       "accuracy_pct": 100.0,
       "correct": 50,
       "total": 50,
-      "processing_time": 0.014,
+      "processing_time": 0.016,
       "confidence": 0.962,
       "mismatch_count": 0
     },
@@ -56,7 +56,7 @@
       "accuracy_pct": 100.0,
       "correct": 50,
       "total": 50,
-      "processing_time": 0.019,
+      "processing_time": 0.017,
       "confidence": 0.894,
       "mismatch_count": 0
     },
@@ -67,7 +67,7 @@
       "accuracy_pct": 100.0,
       "correct": 50,
       "total": 50,
-      "processing_time": 0.017,
+      "processing_time": 0.02,
       "confidence": 0.915,
       "mismatch_count": 0
     },
@@ -78,7 +78,7 @@
       "accuracy_pct": 100.0,
       "correct": 50,
       "total": 50,
-      "processing_time": 0.018,
+      "processing_time": 0.021,
       "confidence": 0.972,
       "mismatch_count": 0
     },
@@ -89,7 +89,7 @@
       "accuracy_pct": 100.0,
       "correct": 50,
       "total": 50,
-      "processing_time": 0.03,
+      "processing_time": 0.033,
       "confidence": 0.996,
       "mismatch_count": 0
     },
@@ -100,7 +100,7 @@
       "accuracy_pct": 100.0,
       "correct": 50,
       "total": 50,
-      "processing_time": 0.015,
+      "processing_time": 0.016,
       "confidence": 0.987,
       "mismatch_count": 0
     },
@@ -111,7 +111,7 @@
       "accuracy_pct": 100.0,
       "correct": 50,
       "total": 50,
-      "processing_time": 0.03,
+      "processing_time": 0.037,
       "confidence": 0.952,
       "mismatch_count": 0
     }

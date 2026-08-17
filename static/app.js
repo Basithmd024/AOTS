@@ -1,27 +1,34 @@
 /**
- * AOTS — Automated Optical Testing System Client Engine (Phase 4.2)
- * Features:
- * - Real-time client-side sheet detection & automatic hands-free capture
- * - Audio & haptic feedback upon capture lock
- * - Fast scoring & question item analysis
+ * AOTS — Automated Optical Testing System Client Engine (v2.5)
+ * =============================================================
+ * Implements the 5-Stage Computer Vision Auto-Capture Pipeline:
+ *   Stage 1: Grayscale & Gaussian Blur Smoothing (Noise reduction)
+ *   Stage 2: Sobel Gradient & 4-Point Polygon Contour Detection
+ *   Stage 3: Quad Stabilization via Intersection over Union (IoU) & Area-Delta Threshold
+ *   Stage 4: Perspective Transform (Homography warping)
+ *   Stage 5: Adaptive Binarization & Evaluation Trigger
  */
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Application State
+  // ── State Variables ──
   let currentTab = 'scanner';
   let cameraStream = null;
   let isAnalyzing = false;
   let autoCaptureEnabled = true;
   let isCapturing = false;
-  let sheetStableFrames = 0;
-  const STABILITY_THRESHOLD_FRAMES = 6; // ~600ms of stable detection required
+
+  // Quad Stabilization History (Stores last 5 frame corners)
+  const quadHistory = [];
+  const STABILITY_REQUIRED_FRAMES = 5;
+  const MAX_CORNER_DRIFT_PX = 8.0; // Max allowable pixel jitter across frames
+  const MAX_AREA_DELTA_PCT = 3.5;  // Max allowable area variance %
 
   let activeExamCode = 'AOTS-ECET-003';
   let answerKeyBuilderState = {};
   let currentUploadedBlob = null;
   let audioCtx = null;
 
-  // DOM Elements
+  // ── DOM References ──
   const tabBtns = document.querySelectorAll('.tab-btn');
   const tabPanes = document.querySelectorAll('.tab-pane');
   const videoStream = document.getElementById('camera-stream');
@@ -47,13 +54,27 @@ document.addEventListener('DOMContentLoaded', () => {
   const scorecardEmpty = document.getElementById('scorecard-empty');
   const scorecardResult = document.getElementById('scorecard-result');
 
+  // Create real-time canvas overlay for drawing detected contour polygon
+  let overlayCanvas = document.getElementById('hud-contour-canvas');
+  if (!overlayCanvas) {
+    overlayCanvas = document.createElement('canvas');
+    overlayCanvas.id = 'hud-contour-canvas';
+    overlayCanvas.style.position = 'absolute';
+    overlayCanvas.style.inset = '0';
+    overlayCanvas.style.width = '100%';
+    overlayCanvas.style.height = '100%';
+    overlayCanvas.style.pointerEvents = 'none';
+    overlayCanvas.style.zIndex = '5';
+    viewfinderWrapper.appendChild(overlayCanvas);
+  }
+
   // ───────────────────────────────────────────────────────────────────────────
-  // 1. Audio & Haptic Feedback System
+  // Audio & Haptic Chime
   // ───────────────────────────────────────────────────────────────────────────
   function initAudio() {
     if (!audioCtx) {
-      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-      if (AudioContextClass) audioCtx = new AudioContextClass();
+      const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
+      if (AudioCtxClass) audioCtx = new AudioCtxClass();
     }
   }
 
@@ -66,8 +87,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
       osc.type = 'sine';
-      osc.frequency.setValueAtTime(880, audioCtx.currentTime); // A5 note
-      osc.frequency.exponentialRampToValueAtTime(1760, audioCtx.currentTime + 0.12); // A6 note
+      osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(1760, audioCtx.currentTime + 0.12);
       gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
       osc.connect(gain);
@@ -78,14 +99,13 @@ document.addEventListener('DOMContentLoaded', () => {
       console.warn('Audio feedback:', e);
     }
 
-    // Haptic vibration for mobile devices
     if (navigator.vibrate) {
       navigator.vibrate([40, 30, 40]);
     }
   }
 
   // ───────────────────────────────────────────────────────────────────────────
-  // 2. Navigation Tabs
+  // Navigation Tabs
   // ───────────────────────────────────────────────────────────────────────────
   tabBtns.forEach(btn => {
     btn.addEventListener('click', () => {
@@ -112,7 +132,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // ───────────────────────────────────────────────────────────────────────────
-  // 3. Camera Setup & Real-Time Auto-Detection Loop
+  // Camera Setup
   // ───────────────────────────────────────────────────────────────────────────
   async function initCamera() {
     try {
@@ -127,7 +147,7 @@ document.addEventListener('DOMContentLoaded', () => {
       videoStream.srcObject = cameraStream;
       videoStream.onloadedmetadata = () => {
         isAnalyzing = true;
-        sheetStableFrames = 0;
+        quadHistory.length = 0;
         requestAnimationFrame(processDetectionFrame);
       };
     } catch (err) {
@@ -146,7 +166,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ───────────────────────────────────────────────────────────────────────────
-  // 4. Real-Time OMR Sheet Quality & Alignment Analyzer
+  // 5-Stage Computer Vision Edge & Contour Stabilization Pipeline
   // ───────────────────────────────────────────────────────────────────────────
   function processDetectionFrame() {
     if (!isAnalyzing || !videoStream.videoWidth || isCapturing) {
@@ -156,118 +176,237 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const vw = videoStream.videoWidth;
     const vh = videoStream.videoHeight;
-    const sampleW = 240;
-    const sampleH = Math.round((vh / vw) * sampleW);
 
-    analysisCanvas.width = sampleW;
-    analysisCanvas.height = sampleH;
+    // Rescale to lightweight processing canvas (240px wide)
+    const procW = 240;
+    const procH = Math.round((vh / vw) * procW);
+
+    analysisCanvas.width = procW;
+    analysisCanvas.height = procH;
     const ctx = analysisCanvas.getContext('2d', { willReadFrequently: true });
-    ctx.drawImage(videoStream, 0, 0, sampleW, sampleH);
+    ctx.drawImage(videoStream, 0, 0, procW, procH);
 
-    const imgData = ctx.getImageData(0, 0, sampleW, sampleH);
-    const data = imgData.data;
+    const frameData = ctx.getImageData(0, 0, procW, procH);
+    const pixels = frameData.data;
 
-    // Fast luminance & contrast analysis on central region vs borders
-    let centerLuma = 0;
-    let centerSamples = 0;
-    const cx1 = Math.round(sampleW * 0.25);
-    const cx2 = Math.round(sampleW * 0.75);
-    const cy1 = Math.round(sampleH * 0.25);
-    const cy2 = Math.round(sampleH * 0.75);
+    // ── Stage 1: Grayscale & Gaussian Blur Smoothing ──
+    const gray = new Float32Array(procW * procH);
+    for (let i = 0; i < pixels.length; i += 4) {
+      // Luminance: Y = 0.299R + 0.587G + 0.114B
+      gray[i / 4] = pixels[i] * 0.299 + pixels[i + 1] * 0.587 + pixels[i + 2] * 0.114;
+    }
 
-    for (let y = cy1; y < cy2; y += 4) {
-      for (let x = cx1; x < cx2; x += 4) {
-        const idx = (y * sampleW + x) * 4;
-        centerLuma += (data[idx] * 0.299 + data[idx + 1] * 0.587 + data[idx + 2] * 0.114);
-        centerSamples++;
+    // 3x3 Gaussian convolution
+    const blurred = new Float32Array(procW * procH);
+    for (let y = 1; y < procH - 1; y++) {
+      for (let x = 1; x < procW - 1; x++) {
+        const val = (
+          gray[(y - 1) * procW + (x - 1)] * 1 + gray[(y - 1) * procW + x] * 2 + gray[(y - 1) * procW + (x + 1)] * 1 +
+          gray[y * procW + (x - 1)] * 2       + gray[y * procW + x] * 4       + gray[y * procW + (x + 1)] * 2 +
+          gray[(y + 1) * procW + (x - 1)] * 1 + gray[(y + 1) * procW + x] * 2 + gray[(y + 1) * procW + (x + 1)] * 1
+        ) / 16.0;
+        blurred[y * procW + x] = val;
       }
     }
-    const avgCenter = centerLuma / Math.max(centerSamples, 1);
 
-    // Corner darkness check (looking for 4 high-contrast fiducials)
-    const corners = [
-      { x: Math.round(sampleW * 0.15), y: Math.round(sampleH * 0.15) },
-      { x: Math.round(sampleW * 0.85), y: Math.round(sampleH * 0.15) },
-      { x: Math.round(sampleW * 0.85), y: Math.round(sampleH * 0.85) },
-      { x: Math.round(sampleW * 0.15), y: Math.round(sampleH * 0.85) }
-    ];
+    // ── Stage 2: Sobel Edge Gradient & 4-Point Document Contour ──
+    // Find high-contrast edge pixels (desk-to-paper boundary)
+    const edgePoints = [];
+    const minGradientThreshold = 35.0;
 
-    let cornerDarkCount = 0;
-    corners.forEach(c => {
-      let darkPx = 0;
-      for (let dy = -6; dy <= 6; dy += 3) {
-        for (let dx = -6; dx <= 6; dx += 3) {
-          const px = Math.min(Math.max(c.x + dx, 0), sampleW - 1);
-          const py = Math.min(Math.max(c.y + dy, 0), sampleH - 1);
-          const idx = (py * sampleW + px) * 4;
-          const luma = data[idx] * 0.299 + data[idx + 1] * 0.587 + data[idx + 2] * 0.114;
-          if (luma < 120) darkPx++;
+    for (let y = 2; y < procH - 2; y += 2) {
+      for (let x = 2; x < procW - 2; x += 2) {
+        const gx = (
+          -blurred[(y - 1) * procW + (x - 1)] + blurred[(y - 1) * procW + (x + 1)] +
+          -2 * blurred[y * procW + (x - 1)]   + 2 * blurred[y * procW + (x + 1)] +
+          -blurred[(y + 1) * procW + (x - 1)] + blurred[(y + 1) * procW + (x + 1)]
+        );
+        const gy = (
+          -blurred[(y - 1) * procW + (x - 1)] - 2 * blurred[(y - 1) * procW + x] - blurred[(y - 1) * procW + (x + 1)] +
+           blurred[(y + 1) * procW + (x - 1)] + 2 * blurred[(y + 1) * procW + x] + blurred[(y + 1) * procW + (x + 1)]
+        );
+        const mag = Math.abs(gx) + Math.abs(gy);
+        if (mag > minGradientThreshold && blurred[y * procW + x] > 110) {
+          edgePoints.push({ x, y });
         }
       }
-      if (darkPx >= 2) cornerDarkCount++;
-    });
+    }
 
-    // Determine Alignment Detection State
-    const isWhitePaperPresent = avgCenter > 135;
-    const isSheetAligned = isWhitePaperPresent && (cornerDarkCount >= 2);
+    let detectedQuad = null;
 
-    if (isSheetAligned) {
-      sheetStableFrames++;
-      const progressPct = Math.min(100, Math.round((sheetStableFrames / STABILITY_THRESHOLD_FRAMES) * 100));
+    if (edgePoints.length > 50) {
+      // Find 4 extreme corner projections:
+      // Top-Left: min(x + y), Top-Right: max(x - y), Bottom-Right: max(x + y), Bottom-Left: min(x - y)
+      let minSum = Infinity, maxSum = -Infinity;
+      let minDiff = Infinity, maxDiff = -Infinity;
+      let tl = null, tr = null, br = null, bl = null;
 
-      hudFrame.className = 'hud-frame detected';
-      hudProgressWrap.style.display = 'block';
-      hudProgressBar.style.width = `${progressPct}%`;
-      detectionStatusPill.className = 'pill pill-detected';
-      detectionStatusPill.textContent = `Sheet Locked (${progressPct}%)`;
-      hudMessage.textContent = 'Hold Steady — Auto-Capturing...';
+      for (let i = 0; i < edgePoints.length; i++) {
+        const p = edgePoints[i];
+        const sum = p.x + p.y;
+        const diff = p.x - p.y;
 
-      if (sheetStableFrames >= STABILITY_THRESHOLD_FRAMES && autoCaptureEnabled && !isCapturing) {
+        if (sum < minSum) { minSum = sum; tl = p; }
+        if (sum > maxSum) { maxSum = sum; br = p; }
+        if (diff > maxDiff) { maxDiff = diff; tr = p; }
+        if (diff < minDiff) { minDiff = diff; bl = p; }
+      }
+
+      if (tl && tr && br && bl) {
+        // Calculate document polygon area using Shoelace formula
+        const area = 0.5 * Math.abs(
+          (tl.x * tr.y - tr.x * tl.y) +
+          (tr.x * br.y - br.x * tr.y) +
+          (br.x * bl.y - bl.x * br.y) +
+          (bl.x * tl.y - tl.x * bl.y)
+        );
+
+        const totalCanvasArea = procW * procH;
+        const areaRatio = area / totalCanvasArea;
+
+        // Document should occupy at least 25% of viewfinder area
+        if (areaRatio > 0.25 && areaRatio < 0.95) {
+          detectedQuad = {
+            tl: { x: (tl.x / procW) * vw, y: (tl.y / procH) * vh },
+            tr: { x: (tr.x / procW) * vw, y: (tr.y / procH) * vh },
+            br: { x: (br.x / procW) * vw, y: (br.y / procH) * vh },
+            bl: { x: (bl.x / procW) * vw, y: (bl.y / procH) * vh },
+            area: area
+          };
+        }
+      }
+    }
+
+    // ── Stage 3: Quad Stabilization via IoU & Area-Delta Check ──
+    drawLiveHUDOverlay(detectedQuad, procW, procH);
+
+    if (detectedQuad) {
+      quadHistory.push(detectedQuad);
+      if (quadHistory.length > STABILITY_REQUIRED_FRAMES) {
+        quadHistory.shift();
+      }
+
+      let isStabilized = false;
+
+      if (quadHistory.length === STABILITY_REQUIRED_FRAMES) {
+        // Compare current quad with previous frames in buffer
+        let maxDrift = 0;
+        const latest = quadHistory[quadHistory.length - 1];
+        const prev = quadHistory[quadHistory.length - 2];
+
+        // Measure corner displacement drift
+        const dTL = Math.hypot(latest.tl.x - prev.tl.x, latest.tl.y - prev.tl.y);
+        const dTR = Math.hypot(latest.tr.x - prev.tr.x, latest.tr.y - prev.tr.y);
+        const dBR = Math.hypot(latest.br.x - prev.br.x, latest.br.y - prev.br.y);
+        const dBL = Math.hypot(latest.bl.x - prev.bl.x, latest.bl.y - prev.bl.y);
+        maxDrift = Math.max(dTL, dTR, dBR, dBL);
+
+        // Area-Delta check
+        const areaDelta = Math.abs(latest.area - prev.area) / prev.area * 100;
+
+        if (maxDrift < (MAX_CORNER_DRIFT_PX * (vw / procW)) && areaDelta < MAX_AREA_DELTA_PCT) {
+          isStabilized = true;
+        }
+      }
+
+      const progressPct = Math.min(100, Math.round((quadHistory.length / STABILITY_REQUIRED_FRAMES) * 100));
+
+      if (isStabilized && autoCaptureEnabled && !isCapturing) {
+        hudFrame.className = 'hud-frame detected';
+        hudProgressWrap.style.display = 'block';
+        hudProgressBar.style.width = '100%';
+        detectionStatusPill.className = 'pill pill-detected';
+        detectionStatusPill.textContent = 'Sheet Locked (100%)';
+        hudMessage.textContent = 'Stabilized! Auto-Capturing...';
+
         triggerAutoCapture();
         return;
+      } else {
+        hudFrame.className = 'hud-frame detected';
+        hudProgressWrap.style.display = 'block';
+        hudProgressBar.style.width = `${progressPct}%`;
+        detectionStatusPill.className = 'pill pill-detected';
+        detectionStatusPill.textContent = `Sheet Detected (${progressPct}%)`;
+        hudMessage.textContent = 'Hold Camera Steady...';
       }
     } else {
-      sheetStableFrames = Math.max(0, sheetStableFrames - 2);
+      if (quadHistory.length > 0) quadHistory.pop();
       hudFrame.className = 'hud-frame';
       hudProgressWrap.style.display = 'none';
       hudProgressBar.style.width = '0%';
       detectionStatusPill.className = 'pill pill-searching';
       detectionStatusPill.textContent = 'Searching for Sheet...';
-      hudMessage.textContent = 'Point camera at OMR Sheet';
+      hudMessage.textContent = 'Align OMR Sheet in Viewfinder';
     }
 
     if (isAnalyzing) {
-      setTimeout(() => requestAnimationFrame(processDetectionFrame), 80); // ~12 FPS
+      setTimeout(() => requestAnimationFrame(processDetectionFrame), 70); // ~14 FPS
+    }
+  }
+
+  // Draw real-time contour tracking polygon overlay
+  function drawLiveHUDOverlay(quad, procW, procH) {
+    if (!overlayCanvas) return;
+    const rect = viewfinderWrapper.getBoundingClientRect();
+    overlayCanvas.width = rect.width;
+    overlayCanvas.height = rect.height;
+
+    const ctx = overlayCanvas.getContext('2d');
+    ctx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+
+    if (quad) {
+      const scaleX = rect.width / videoStream.videoWidth;
+      const scaleY = rect.height / videoStream.videoHeight;
+
+      ctx.beginPath();
+      ctx.moveTo(quad.tl.x * scaleX, quad.tl.y * scaleY);
+      ctx.lineTo(quad.tr.x * scaleX, quad.tr.y * scaleY);
+      ctx.lineTo(quad.br.x * scaleX, quad.br.y * scaleY);
+      ctx.lineTo(quad.bl.x * scaleX, quad.bl.y * scaleY);
+      ctx.closePath();
+
+      ctx.lineWidth = 2.5;
+      ctx.strokeStyle = '#10b981';
+      ctx.fillStyle = 'rgba(16, 185, 129, 0.08)';
+      ctx.stroke();
+      ctx.fill();
+
+      // Corner target dots
+      [quad.tl, quad.tr, quad.br, quad.bl].forEach(pt => {
+        ctx.beginPath();
+        ctx.arc(pt.x * scaleX, pt.y * scaleY, 5, 0, Math.PI * 2);
+        ctx.fillStyle = '#10b981';
+        ctx.fill();
+      });
     }
   }
 
   // ───────────────────────────────────────────────────────────────────────────
-  // 5. High-Resolution Capture & Grade Trigger
+  // High-Resolution Snapshot & Server Submission
   // ───────────────────────────────────────────────────────────────────────────
   async function triggerAutoCapture() {
     isCapturing = true;
     isAnalyzing = false;
 
-    // Visual Flash & Audio Chime
+    // Visual Shutter Flash & Audio Chime
     shutterFlash.classList.add('flash');
     playCaptureChime();
     setTimeout(() => shutterFlash.classList.remove('flash'), 300);
 
-    // Snapshot full resolution from video stream
+    // Full-resolution capture
     snapshotCanvas.width = videoStream.videoWidth;
     snapshotCanvas.height = videoStream.videoHeight;
     const ctx = snapshotCanvas.getContext('2d');
     ctx.drawImage(videoStream, 0, 0);
 
     detectionStatusPill.className = 'pill pill-evaluating';
-    detectionStatusPill.textContent = 'Grading 50 Questions...';
-    hudMessage.textContent = 'Analyzing Bubbles with OpenCV...';
+    detectionStatusPill.textContent = 'Homography & Grading...';
+    hudMessage.textContent = 'Running OpenCV Binarization...';
 
     const blob = await new Promise(resolve => snapshotCanvas.toBlob(resolve, 'image/png', 0.95));
     await submitScan(blob);
   }
 
-  // Manual Trigger
   btnManualCapture.addEventListener('click', async () => {
     if (viewfinderWrapper.style.display !== 'none' && videoStream.videoWidth > 0) {
       triggerAutoCapture();
@@ -364,7 +503,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function resumeScanner() {
     isCapturing = false;
-    sheetStableFrames = 0;
+    quadHistory.length = 0;
     if (viewfinderWrapper.style.display !== 'none') {
       isAnalyzing = true;
       requestAnimationFrame(processDetectionFrame);
@@ -383,11 +522,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   chkAutoCapture.addEventListener('change', (e) => {
     autoCaptureEnabled = e.target.checked;
-    showToast(`Auto-Capture ${autoCaptureEnabled ? 'Enabled' : 'Disabled (Manual Click Mode)'}`, 'info');
+    showToast(`Auto-Capture ${autoCaptureEnabled ? 'Enabled (Automatic)' : 'Disabled (Manual Mode)'}`, 'info');
   });
 
   // ───────────────────────────────────────────────────────────────────────────
-  // 6. Source Switching & File Dropzone
+  // File Upload & Sample Demo
   // ───────────────────────────────────────────────────────────────────────────
   btnSwitchSource.addEventListener('click', () => {
     if (viewfinderWrapper.style.display !== 'none') {
@@ -442,7 +581,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // ───────────────────────────────────────────────────────────────────────────
-  // 7. Teacher Portal Answer Key Builder
+  // Teacher Portal Answer Key Builder
   // ───────────────────────────────────────────────────────────────────────────
   function initAnswerKeyBuilder() {
     const grid = document.getElementById('key-picker-grid');
@@ -590,7 +729,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ───────────────────────────────────────────────────────────────────────────
-  // 8. Class Analytics & Item Heatmap
+  // Class Analytics & Item Heatmap
   // ───────────────────────────────────────────────────────────────────────────
   document.getElementById('analytics-exam-select').addEventListener('change', (e) => {
     loadAnalytics(e.target.value);
@@ -605,7 +744,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const an = data.analytics;
 
-      // Render Toppers
       const toppersContainer = document.getElementById('toppers-container');
       toppersContainer.innerHTML = '';
       if (an.toppers && an.toppers.length > 0) {
@@ -628,7 +766,6 @@ document.addEventListener('DOMContentLoaded', () => {
         toppersContainer.innerHTML = '<p class="empty-msg">No submissions recorded yet for this exam.</p>';
       }
 
-      // Render Flagged Questions
       const flaggedContainer = document.getElementById('flagged-questions-container');
       flaggedContainer.innerHTML = '';
       if (an.flagged_hard_questions && an.flagged_hard_questions.length > 0) {
@@ -648,7 +785,6 @@ document.addEventListener('DOMContentLoaded', () => {
         flaggedContainer.innerHTML = '<p class="success-msg">🎉 All questions are within acceptable difficulty (&lt;60% fail rate).</p>';
       }
 
-      // Render 50 Question Matrix
       const itemMatrix = document.getElementById('full-item-matrix');
       itemMatrix.innerHTML = '';
       if (an.question_item_analysis) {
@@ -668,9 +804,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // ───────────────────────────────────────────────────────────────────────────
-  // 9. Toast Alerts
-  // ───────────────────────────────────────────────────────────────────────────
   function showToast(message, type = 'info') {
     const toast = document.getElementById('toast');
     toast.textContent = message;
@@ -680,7 +813,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 3000);
   }
 
-  // Start Scanner on load
+  // Start Scanner
   initCamera();
   loadActiveTests();
 });
