@@ -522,6 +522,7 @@ def analyze_bubbles(binary_image: np.ndarray, spec: dict,
 def process_omr_sheet(
     image_path: str,
     spec_path: str = "template_spec.json",
+    custom_corners: list = None,
     debug: bool = False
 ) -> dict:
     """
@@ -530,6 +531,7 @@ def process_omr_sheet(
     Args:
         image_path: Path to the OMR sheet photo
         spec_path: Path to template_spec.json
+        custom_corners: Optional list of 4 corner coordinates [[x,y],...]
         debug: Print intermediate debug info
 
     Returns:
@@ -558,9 +560,26 @@ def process_omr_sheet(
             print(f"    ⚠️  {w}")
 
     # ── Stage 2: Alignment ──
-    if debug:
-        print("  [Stage 2] Aligning sheet...")
-    aligned = align_sheet(image, spec, debug=debug)
+    if custom_corners is not None and len(custom_corners) == 4:
+        if debug:
+            print(f"  [Stage 2] Using custom user-adjusted corners: {custom_corners}")
+        ordered = order_points(np.array(custom_corners, dtype="float32"))
+        canvas_w = spec["canvas_size"]["width"]
+        canvas_h = spec["canvas_size"]["height"]
+        dst = np.array([
+            [0, 0],
+            [canvas_w - 1, 0],
+            [canvas_w - 1, canvas_h - 1],
+            [0, canvas_h - 1]
+        ], dtype="float32")
+        M = cv2.getPerspectiveTransform(ordered, dst)
+        aligned = cv2.warpPerspective(image, M, (canvas_w, canvas_h),
+                                      flags=cv2.INTER_LINEAR,
+                                      borderMode=cv2.BORDER_REPLICATE)
+    else:
+        if debug:
+            print("  [Stage 2] Aligning sheet automatically...")
+        aligned = align_sheet(image, spec, debug=debug)
 
     if debug:
         debug_dir = os.path.join(os.path.dirname(image_path) or ".", "debug")

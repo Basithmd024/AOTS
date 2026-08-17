@@ -134,8 +134,35 @@
             </div>
           </div>
 
+          <!-- Corner Adjustment Editor (CamScanner Mode) -->
+          <div id="corner-editor-wrap" class="corner-editor-wrap" style="display: none;">
+            <div class="editor-top-bar">
+              <span id="editor-timer-badge" class="pill pill-warning">⏳ Auto-Grading in 10s... (Adjust if needed)</span>
+              <div class="editor-actions">
+                <button type="button" id="btn-editor-retake" class="btn-xs">🔄 Retake</button>
+                <button type="button" id="btn-editor-auto-align" class="btn-xs">⚡ Auto-Snap</button>
+              </div>
+            </div>
+
+            <div class="editor-canvas-container" id="editor-canvas-container">
+              <canvas id="crop-editor-canvas"></canvas>
+              <!-- 4 Interactive Draggable Handles -->
+              <div class="drag-handle" id="handle-tl" data-corner="tl"><span>TL</span></div>
+              <div class="drag-handle" id="handle-tr" data-corner="tr"><span>TR</span></div>
+              <div class="drag-handle" id="handle-br" data-corner="br"><span>BR</span></div>
+              <div class="drag-handle" id="handle-bl" data-corner="bl"><span>BL</span></div>
+            </div>
+
+            <div class="editor-bottom-bar">
+              <p class="editor-hint">💡 Drag any corner dot with your finger to align perfectly with the paper</p>
+              <button type="button" id="btn-editor-confirm" class="btn btn-primary btn-block">
+                🚀 Grade Now With These Edges
+              </button>
+            </div>
+          </div>
+
           <!-- Bottom Action Bar -->
-          <div class="panel-footer">
+          <div class="panel-footer" id="main-panel-footer">
             <button id="btn-sample-demo" class="btn btn-secondary">
               ⚡ Load Sample Sheet
             </button>

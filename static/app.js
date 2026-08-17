@@ -1,12 +1,10 @@
 /**
- * AOTS — Automated Optical Testing System Client Engine (v2.5)
- * =============================================================
- * Implements the 5-Stage Computer Vision Auto-Capture Pipeline:
- *   Stage 1: Grayscale & Gaussian Blur Smoothing (Noise reduction)
- *   Stage 2: Sobel Gradient & 4-Point Polygon Contour Detection
- *   Stage 3: Quad Stabilization via Intersection over Union (IoU) & Area-Delta Threshold
- *   Stage 4: Perspective Transform (Homography warping)
- *   Stage 5: Adaptive Binarization & Evaluation Trigger
+ * AOTS — Automated Optical Testing System Client Engine (v2.6 CamScanner Edition)
+ * Features:
+ * - 5-Stage Real-Time Frame Noise Reduction & Edge Contour Tracking
+ * - Interactive 4-Corner Draggable Crop Editor with 10-Second Auto-Countdown
+ * - Custom Corner Coordinates homography submission to /api/scan
+ * - Audio & Haptic Feedback
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -17,11 +15,19 @@ document.addEventListener('DOMContentLoaded', () => {
   let autoCaptureEnabled = true;
   let isCapturing = false;
 
-  // Quad Stabilization History (Stores last 5 frame corners)
+  // Quad Stabilization History
   const quadHistory = [];
   const STABILITY_REQUIRED_FRAMES = 5;
-  const MAX_CORNER_DRIFT_PX = 8.0; // Max allowable pixel jitter across frames
-  const MAX_AREA_DELTA_PCT = 3.5;  // Max allowable area variance %
+  const MAX_CORNER_DRIFT_PX = 8.0;
+  const MAX_AREA_DELTA_PCT = 3.5;
+
+  // Corner Editor State
+  let editorImage = null;
+  let editorCorners = { tl: { x: 0, y: 0 }, tr: { x: 0, y: 0 }, br: { x: 0, y: 0 }, bl: { x: 0, y: 0 } };
+  let editorTimer = null;
+  let editorSecondsLeft = 10;
+  let activeDragCorner = null;
+  let capturedBlob = null;
 
   let activeExamCode = 'AOTS-ECET-003';
   let answerKeyBuilderState = {};
@@ -50,11 +56,27 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnManualCapture = document.getElementById('btn-manual-capture');
   const btnSampleDemo = document.getElementById('btn-sample-demo');
   const btnScanNext = document.getElementById('btn-scan-next');
+  const mainPanelFooter = document.getElementById('main-panel-footer');
+
+  // Corner Editor DOM
+  const cornerEditorWrap = document.getElementById('corner-editor-wrap');
+  const editorCanvas = document.getElementById('crop-editor-canvas');
+  const editorContainer = document.getElementById('editor-canvas-container');
+  const editorTimerBadge = document.getElementById('editor-timer-badge');
+  const btnEditorRetake = document.getElementById('btn-editor-retake');
+  const btnEditorAutoAlign = document.getElementById('btn-editor-auto-align');
+  const btnEditorConfirm = document.getElementById('btn-editor-confirm');
+  const handles = {
+    tl: document.getElementById('handle-tl'),
+    tr: document.getElementById('handle-tr'),
+    br: document.getElementById('handle-br'),
+    bl: document.getElementById('handle-bl')
+  };
 
   const scorecardEmpty = document.getElementById('scorecard-empty');
   const scorecardResult = document.getElementById('scorecard-result');
 
-  // Create real-time canvas overlay for drawing detected contour polygon
+  // Real-time canvas overlay for HUD
   let overlayCanvas = document.getElementById('hud-contour-canvas');
   if (!overlayCanvas) {
     overlayCanvas = document.createElement('canvas');
@@ -118,7 +140,9 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById(`tab-${tabId}`).classList.add('active');
 
       if (tabId === 'scanner') {
-        if (viewfinderWrapper.style.display !== 'none') initCamera();
+        if (viewfinderWrapper.style.display !== 'none' && cornerEditorWrap.style.display === 'none') {
+          initCamera();
+        }
       } else {
         stopCamera();
         if (tabId === 'teacher') {
@@ -166,7 +190,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ───────────────────────────────────────────────────────────────────────────
-  // 5-Stage Computer Vision Edge & Contour Stabilization Pipeline
+  // Real-Time Frame Noise Reduction & Edge Contour Tracking
   // ───────────────────────────────────────────────────────────────────────────
   function processDetectionFrame() {
     if (!isAnalyzing || !videoStream.videoWidth || isCapturing) {
@@ -176,8 +200,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const vw = videoStream.videoWidth;
     const vh = videoStream.videoHeight;
-
-    // Rescale to lightweight processing canvas (240px wide)
     const procW = 240;
     const procH = Math.round((vh / vw) * procW);
 
@@ -189,10 +211,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const frameData = ctx.getImageData(0, 0, procW, procH);
     const pixels = frameData.data;
 
-    // ── Stage 1: Grayscale & Gaussian Blur Smoothing ──
+    // Grayscale
     const gray = new Float32Array(procW * procH);
     for (let i = 0; i < pixels.length; i += 4) {
-      // Luminance: Y = 0.299R + 0.587G + 0.114B
       gray[i / 4] = pixels[i] * 0.299 + pixels[i + 1] * 0.587 + pixels[i + 2] * 0.114;
     }
 
@@ -200,17 +221,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const blurred = new Float32Array(procW * procH);
     for (let y = 1; y < procH - 1; y++) {
       for (let x = 1; x < procW - 1; x++) {
-        const val = (
+        blurred[y * procW + x] = (
           gray[(y - 1) * procW + (x - 1)] * 1 + gray[(y - 1) * procW + x] * 2 + gray[(y - 1) * procW + (x + 1)] * 1 +
           gray[y * procW + (x - 1)] * 2       + gray[y * procW + x] * 4       + gray[y * procW + (x + 1)] * 2 +
           gray[(y + 1) * procW + (x - 1)] * 1 + gray[(y + 1) * procW + x] * 2 + gray[(y + 1) * procW + (x + 1)] * 1
         ) / 16.0;
-        blurred[y * procW + x] = val;
       }
     }
 
-    // ── Stage 2: Sobel Edge Gradient & 4-Point Document Contour ──
-    // Find high-contrast edge pixels (desk-to-paper boundary)
+    // Sobel Edge Gradient
     const edgePoints = [];
     const minGradientThreshold = 35.0;
 
@@ -235,8 +254,6 @@ document.addEventListener('DOMContentLoaded', () => {
     let detectedQuad = null;
 
     if (edgePoints.length > 50) {
-      // Find 4 extreme corner projections:
-      // Top-Left: min(x + y), Top-Right: max(x - y), Bottom-Right: max(x + y), Bottom-Left: min(x - y)
       let minSum = Infinity, maxSum = -Infinity;
       let minDiff = Infinity, maxDiff = -Infinity;
       let tl = null, tr = null, br = null, bl = null;
@@ -253,18 +270,16 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       if (tl && tr && br && bl) {
-        // Calculate document polygon area using Shoelace formula
         const area = 0.5 * Math.abs(
           (tl.x * tr.y - tr.x * tl.y) +
           (tr.x * br.y - br.x * tr.y) +
           (br.x * bl.y - bl.x * br.y) +
-          (bl.x * tl.y - tl.x * bl.y)
+          (bl.x * tl.y - bl.x * bl.y)
         );
 
-        const totalCanvasArea = procW * procH;
-        const areaRatio = area / totalCanvasArea;
+        const totalArea = procW * procH;
+        const areaRatio = area / totalArea;
 
-        // Document should occupy at least 25% of viewfinder area
         if (areaRatio > 0.25 && areaRatio < 0.95) {
           detectedQuad = {
             tl: { x: (tl.x / procW) * vw, y: (tl.y / procH) * vh },
@@ -277,31 +292,21 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    // ── Stage 3: Quad Stabilization via IoU & Area-Delta Check ──
-    drawLiveHUDOverlay(detectedQuad, procW, procH);
+    drawLiveHUDOverlay(detectedQuad);
 
     if (detectedQuad) {
       quadHistory.push(detectedQuad);
-      if (quadHistory.length > STABILITY_REQUIRED_FRAMES) {
-        quadHistory.shift();
-      }
+      if (quadHistory.length > STABILITY_REQUIRED_FRAMES) quadHistory.shift();
 
       let isStabilized = false;
-
       if (quadHistory.length === STABILITY_REQUIRED_FRAMES) {
-        // Compare current quad with previous frames in buffer
-        let maxDrift = 0;
         const latest = quadHistory[quadHistory.length - 1];
         const prev = quadHistory[quadHistory.length - 2];
-
-        // Measure corner displacement drift
         const dTL = Math.hypot(latest.tl.x - prev.tl.x, latest.tl.y - prev.tl.y);
         const dTR = Math.hypot(latest.tr.x - prev.tr.x, latest.tr.y - prev.tr.y);
         const dBR = Math.hypot(latest.br.x - prev.br.x, latest.br.y - prev.br.y);
         const dBL = Math.hypot(latest.bl.x - prev.bl.x, latest.bl.y - prev.bl.y);
-        maxDrift = Math.max(dTL, dTR, dBR, dBL);
-
-        // Area-Delta check
+        const maxDrift = Math.max(dTL, dTR, dBR, dBL);
         const areaDelta = Math.abs(latest.area - prev.area) / prev.area * 100;
 
         if (maxDrift < (MAX_CORNER_DRIFT_PX * (vw / procW)) && areaDelta < MAX_AREA_DELTA_PCT) {
@@ -319,7 +324,7 @@ document.addEventListener('DOMContentLoaded', () => {
         detectionStatusPill.textContent = 'Sheet Locked (100%)';
         hudMessage.textContent = 'Stabilized! Auto-Capturing...';
 
-        triggerAutoCapture();
+        openCornerAdjustmentModal(detectedQuad);
         return;
       } else {
         hudFrame.className = 'hud-frame detected';
@@ -340,12 +345,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (isAnalyzing) {
-      setTimeout(() => requestAnimationFrame(processDetectionFrame), 70); // ~14 FPS
+      setTimeout(() => requestAnimationFrame(processDetectionFrame), 70);
     }
   }
 
-  // Draw real-time contour tracking polygon overlay
-  function drawLiveHUDOverlay(quad, procW, procH) {
+  function drawLiveHUDOverlay(quad) {
     if (!overlayCanvas) return;
     const rect = viewfinderWrapper.getBoundingClientRect();
     overlayCanvas.width = rect.width;
@@ -371,7 +375,6 @@ document.addEventListener('DOMContentLoaded', () => {
       ctx.stroke();
       ctx.fill();
 
-      // Corner target dots
       [quad.tl, quad.tr, quad.br, quad.bl].forEach(pt => {
         ctx.beginPath();
         ctx.arc(pt.x * scaleX, pt.y * scaleY, 5, 0, Math.PI * 2);
@@ -382,45 +385,250 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ───────────────────────────────────────────────────────────────────────────
-  // High-Resolution Snapshot & Server Submission
+  // Interactive 4-Corner Draggable Crop Editor (CamScanner Mode)
   // ───────────────────────────────────────────────────────────────────────────
-  async function triggerAutoCapture() {
+  async function openCornerAdjustmentModal(detectedQuad = null) {
     isCapturing = true;
     isAnalyzing = false;
 
-    // Visual Shutter Flash & Audio Chime
+    // Shutter flash & chime
     shutterFlash.classList.add('flash');
     playCaptureChime();
     setTimeout(() => shutterFlash.classList.remove('flash'), 300);
 
-    // Full-resolution capture
+    // Snapshot full-res image
     snapshotCanvas.width = videoStream.videoWidth;
     snapshotCanvas.height = videoStream.videoHeight;
     const ctx = snapshotCanvas.getContext('2d');
     ctx.drawImage(videoStream, 0, 0);
 
-    detectionStatusPill.className = 'pill pill-evaluating';
-    detectionStatusPill.textContent = 'Homography & Grading...';
-    hudMessage.textContent = 'Running OpenCV Binarization...';
+    capturedBlob = await new Promise(res => snapshotCanvas.toBlob(res, 'image/png', 0.95));
 
-    const blob = await new Promise(resolve => snapshotCanvas.toBlob(resolve, 'image/png', 0.95));
-    await submitScan(blob);
+    // Load into Editor Canvas
+    editorImage = new Image();
+    editorImage.onload = () => {
+      viewfinderWrapper.style.display = 'none';
+      fileDropzone.style.display = 'none';
+      mainPanelFooter.style.display = 'none';
+      cornerEditorWrap.style.display = 'block';
+
+      setupCornerEditor(detectedQuad);
+    };
+    editorImage.src = URL.createObjectURL(capturedBlob);
   }
 
-  btnManualCapture.addEventListener('click', async () => {
+  function setupCornerEditor(detectedQuad) {
+    const containerRect = editorContainer.getBoundingClientRect();
+    editorCanvas.width = containerRect.width;
+    editorCanvas.height = containerRect.height;
+
+    const imgW = editorImage.width;
+    const imgH = editorImage.height;
+    const scaleX = containerRect.width / imgW;
+    const scaleY = containerRect.height / imgH;
+
+    // Position corners: use detected quad or standard margin defaults
+    if (detectedQuad) {
+      editorCorners.tl = { x: detectedQuad.tl.x * scaleX, y: detectedQuad.tl.y * scaleY };
+      editorCorners.tr = { x: detectedQuad.tr.x * scaleX, y: detectedQuad.tr.y * scaleY };
+      editorCorners.br = { x: detectedQuad.br.x * scaleX, y: detectedQuad.br.y * scaleY };
+      editorCorners.bl = { x: detectedQuad.bl.x * scaleX, y: detectedQuad.bl.y * scaleY };
+    } else {
+      editorCorners.tl = { x: containerRect.width * 0.1, y: containerRect.height * 0.1 };
+      editorCorners.tr = { x: containerRect.width * 0.9, y: containerRect.height * 0.1 };
+      editorCorners.br = { x: containerRect.width * 0.9, y: containerRect.height * 0.9 };
+      editorCorners.bl = { x: containerRect.width * 0.1, y: containerRect.height * 0.9 };
+    }
+
+    updateHandleDOMPositions();
+    renderEditorCanvas();
+
+    // Start 10-Second Auto-Countdown
+    clearInterval(editorTimer);
+    editorSecondsLeft = 10;
+    updateTimerBadge();
+
+    editorTimer = setInterval(() => {
+      editorSecondsLeft--;
+      updateTimerBadge();
+      if (editorSecondsLeft <= 0) {
+        clearInterval(editorTimer);
+        submitWithAdjustedCorners();
+      }
+    }, 1000);
+  }
+
+  function updateTimerBadge() {
+    editorTimerBadge.className = 'pill pill-warning';
+    editorTimerBadge.textContent = `⏳ Auto-Grading in ${editorSecondsLeft}s... (Drag corners to adjust)`;
+  }
+
+  function pauseEditorTimer() {
+    if (editorTimer) {
+      clearInterval(editorTimer);
+      editorTimer = null;
+      editorTimerBadge.className = 'pill pill-detected';
+      editorTimerBadge.textContent = '✏️ Corner Adjusted — Tap Grade Now when ready';
+    }
+  }
+
+  function updateHandleDOMPositions() {
+    Object.keys(handles).forEach(k => {
+      const h = handles[k];
+      const pos = editorCorners[k];
+      h.style.left = `${pos.x}px`;
+      h.style.top = `${pos.y}px`;
+    });
+  }
+
+  function renderEditorCanvas() {
+    const ctx = editorCanvas.getContext('2d');
+    ctx.clearRect(0, 0, editorCanvas.width, editorCanvas.height);
+
+    // Draw background captured image
+    ctx.drawImage(editorImage, 0, 0, editorCanvas.width, editorCanvas.height);
+
+    // Draw quadrilateral boundary polygon
+    ctx.beginPath();
+    ctx.moveTo(editorCorners.tl.x, editorCorners.tl.y);
+    ctx.lineTo(editorCorners.tr.x, editorCorners.tr.y);
+    ctx.lineTo(editorCorners.br.x, editorCorners.br.y);
+    ctx.lineTo(editorCorners.bl.x, editorCorners.bl.y);
+    ctx.closePath();
+
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = '#10b981';
+    ctx.fillStyle = 'rgba(16, 185, 129, 0.12)';
+    ctx.stroke();
+    ctx.fill();
+
+    // Draw grid cross guidelines
+    ctx.strokeStyle = 'rgba(16, 185, 129, 0.35)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    // Midpoint X
+    const mTopX = (editorCorners.tl.x + editorCorners.tr.x) / 2;
+    const mTopY = (editorCorners.tl.y + editorCorners.tr.y) / 2;
+    const mBotX = (editorCorners.bl.x + editorCorners.br.x) / 2;
+    const mBotY = (editorCorners.bl.y + editorCorners.br.y) / 2;
+    ctx.moveTo(mTopX, mTopY);
+    ctx.lineTo(mBotX, mBotY);
+
+    // Midpoint Y
+    const mLeftX = (editorCorners.tl.x + editorCorners.bl.x) / 2;
+    const mLeftY = (editorCorners.tl.y + editorCorners.bl.y) / 2;
+    const mRightX = (editorCorners.tr.x + editorCorners.br.x) / 2;
+    const mRightY = (editorCorners.tr.y + editorCorners.br.y) / 2;
+    ctx.moveTo(mLeftX, mLeftY);
+    ctx.lineTo(mRightX, mRightY);
+    ctx.stroke();
+  }
+
+  // ── Drag Event Handlers for Touch and Mouse ──
+  Object.keys(handles).forEach(cornerKey => {
+    const handle = handles[cornerKey];
+
+    // Pointer Down
+    const startDrag = (e) => {
+      e.preventDefault();
+      activeDragCorner = cornerKey;
+      handle.classList.add('dragging');
+      pauseEditorTimer();
+    };
+
+    handle.addEventListener('mousedown', startDrag);
+    handle.addEventListener('touchstart', startDrag, { passive: false });
+  });
+
+  const moveDrag = (e) => {
+    if (!activeDragCorner) return;
+    e.preventDefault();
+    const rect = editorContainer.getBoundingClientRect();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+    const posX = Math.max(10, Math.min(rect.width - 10, clientX - rect.left));
+    const posY = Math.max(10, Math.min(rect.height - 10, clientY - rect.top));
+
+    editorCorners[activeDragCorner] = { x: posX, y: posY };
+    updateHandleDOMPositions();
+    renderEditorCanvas();
+  };
+
+  const stopDrag = () => {
+    if (activeDragCorner) {
+      handles[activeDragCorner].classList.remove('dragging');
+      activeDragCorner = null;
+    }
+  };
+
+  window.addEventListener('mousemove', moveDrag);
+  window.addEventListener('touchmove', moveDrag, { passive: false });
+  window.addEventListener('mouseup', stopDrag);
+  window.addEventListener('touchend', stopDrag);
+
+  // Editor Buttons
+  btnEditorRetake.addEventListener('click', () => {
+    clearInterval(editorTimer);
+    cornerEditorWrap.style.display = 'none';
+    viewfinderWrapper.style.display = 'block';
+    mainPanelFooter.style.display = 'flex';
+    resumeScanner();
+  });
+
+  btnEditorAutoAlign.addEventListener('click', () => {
+    const w = editorCanvas.width;
+    const h = editorCanvas.height;
+    editorCorners.tl = { x: w * 0.08, y: h * 0.08 };
+    editorCorners.tr = { x: w * 0.92, y: h * 0.08 };
+    editorCorners.br = { x: w * 0.92, y: h * 0.92 };
+    editorCorners.bl = { x: w * 0.08, y: h * 0.92 };
+    updateHandleDOMPositions();
+    renderEditorCanvas();
+    showToast('Corners reset to full boundary.', 'info');
+  });
+
+  btnEditorConfirm.addEventListener('click', () => {
+    clearInterval(editorTimer);
+    submitWithAdjustedCorners();
+  });
+
+  async function submitWithAdjustedCorners() {
+    detectionStatusPill.className = 'pill pill-evaluating';
+    detectionStatusPill.textContent = 'Homography & Grading...';
+
+    // Map screen canvas coordinates back to original full-resolution image coordinates
+    const scaleX = editorImage.width / editorCanvas.width;
+    const scaleY = editorImage.height / editorCanvas.height;
+
+    const normalizedCorners = [
+      [editorCorners.tl.x * scaleX, editorCorners.tl.y * scaleY],
+      [editorCorners.tr.x * scaleX, editorCorners.tr.y * scaleY],
+      [editorCorners.br.x * scaleX, editorCorners.br.y * scaleY],
+      [editorCorners.bl.x * scaleX, editorCorners.bl.y * scaleY]
+    ];
+
+    cornerEditorWrap.style.display = 'none';
+    viewfinderWrapper.style.display = 'block';
+    mainPanelFooter.style.display = 'flex';
+
+    await submitScan(capturedBlob, normalizedCorners);
+  }
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // Manual Trigger & Submit Scan
+  // ───────────────────────────────────────────────────────────────────────────
+  btnManualCapture.addEventListener('click', () => {
     if (viewfinderWrapper.style.display !== 'none' && videoStream.videoWidth > 0) {
-      triggerAutoCapture();
+      openCornerAdjustmentModal();
     } else if (currentUploadedBlob) {
-      isCapturing = true;
-      detectionStatusPill.className = 'pill pill-evaluating';
-      detectionStatusPill.textContent = 'Grading 50 Questions...';
-      await submitScan(currentUploadedBlob);
+      submitScan(currentUploadedBlob);
     } else {
       showToast('Please capture or upload an OMR sheet first.', 'warning');
     }
   });
 
-  async function submitScan(blobToSend) {
+  async function submitScan(blobToSend, customCorners = null) {
     btnManualCapture.disabled = true;
     btnManualCapture.innerHTML = '<span>⏳ Grading with CV Engine...</span>';
 
@@ -428,6 +636,10 @@ document.addEventListener('DOMContentLoaded', () => {
     formData.append('file', blobToSend, 'sheet_scan.png');
     formData.append('test_code', document.getElementById('select-exam').value);
     formData.append('student_id', document.getElementById('input-student-id').value);
+
+    if (customCorners) {
+      formData.append('corners', JSON.stringify(customCorners));
+    }
 
     try {
       const startTime = performance.now();
@@ -522,14 +734,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   chkAutoCapture.addEventListener('change', (e) => {
     autoCaptureEnabled = e.target.checked;
-    showToast(`Auto-Capture ${autoCaptureEnabled ? 'Enabled (Automatic)' : 'Disabled (Manual Mode)'}`, 'info');
+    showToast(`Auto-Capture ${autoCaptureEnabled ? 'Enabled' : 'Disabled (Manual Mode)'}`, 'info');
   });
 
   // ───────────────────────────────────────────────────────────────────────────
   // File Upload & Sample Demo
   // ───────────────────────────────────────────────────────────────────────────
   btnSwitchSource.addEventListener('click', () => {
-    if (viewfinderWrapper.style.display !== 'none') {
+    if (viewfinderWrapper.style.display !== 'none' || cornerEditorWrap.style.display !== 'none') {
       switchToUploadMode();
     } else {
       switchToCameraMode();
@@ -538,14 +750,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function switchToUploadMode() {
     stopCamera();
+    clearInterval(editorTimer);
+    cornerEditorWrap.style.display = 'none';
     viewfinderWrapper.style.display = 'none';
     fileDropzone.style.display = 'flex';
+    mainPanelFooter.style.display = 'flex';
     btnSwitchSource.textContent = '📱 Live Camera';
   }
 
   function switchToCameraMode() {
     fileDropzone.style.display = 'none';
+    cornerEditorWrap.style.display = 'none';
     viewfinderWrapper.style.display = 'block';
+    mainPanelFooter.style.display = 'flex';
     btnSwitchSource.textContent = '📁 File Upload';
     initCamera();
   }

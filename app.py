@@ -210,9 +210,18 @@ def scan_omr():
     save_path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
     file.save(save_path)
 
+    # Optional manual/adjusted corners
+    custom_corners = None
+    corners_raw = request.form.get("corners")
+    if corners_raw:
+        try:
+            custom_corners = json.loads(corners_raw)
+        except Exception:
+            pass
+
     # Run CV OMR Engine
     spec_path = os.path.join(os.path.dirname(__file__), "template_spec.json")
-    omr_output = process_omr_sheet(save_path, spec_path=spec_path, debug=False)
+    omr_output = process_omr_sheet(save_path, spec_path=spec_path, custom_corners=custom_corners, debug=False)
 
     if omr_output.get("status") != "SUCCESS":
         return jsonify({"success": False, "error": omr_output.get("error", "OMR detection failed.")}), 400
