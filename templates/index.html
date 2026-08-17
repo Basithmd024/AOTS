@@ -3,92 +3,79 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>AOTS — Automated Optical Testing System</title>
-  <meta name="description" content="Production-Grade OMR Auto-Capture, Grading & Analytics Engine">
+  <title>AOTS — Document Scanner & OMR Assessment Engine</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-
-  <!-- Top App Navigation -->
-  <header class="app-header">
-    <div class="header-container">
-      <div class="brand">
-        <div class="brand-badge">AOTS</div>
-        <div class="brand-text">
-          <span class="brand-title">Assessment Engine</span>
-          <span class="brand-version">v2.4 Auto-Capture</span>
+  <div class="app-layout">
+    
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         DOCSCANNER NATIVE TOP BAR
+         ═══════════════════════════════════════════════════════════════════════ -->
+    <header class="doc-top-bar">
+      <div class="top-bar-left">
+        <button id="btn-top-back" class="icon-btn" title="Back">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+        </button>
+        <div class="doc-title-box">
+          <span class="doc-brand">AOTS DocScanner</span>
+          <span id="doc-subtitle" class="doc-subtitle">ECET-003 Grand Assessment</span>
         </div>
       </div>
 
-      <nav class="nav-tabs" role="tablist">
-        <button class="tab-btn active" data-tab="scanner" role="tab">
-          <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-          Live Scanner
+      <div class="top-bar-right">
+        <button id="btn-flash-toggle" class="icon-btn" title="Flash mode">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          <span class="flash-sub">A</span>
         </button>
-        <button class="tab-btn" data-tab="teacher" role="tab">
-          <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-          Teacher Portal
+        <button id="btn-grid-toggle" class="icon-btn" title="Grid alignment lines">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
         </button>
-        <button class="tab-btn" data-tab="analytics" role="tab">
-          <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-          Analytics
+        <button id="btn-portal-switch" class="icon-btn" title="Teacher Portal & Analytics">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         </button>
-        <button class="tab-btn" data-tab="template" role="tab">
-          <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
-          Template
-        </button>
-      </nav>
-
-      <div class="system-status">
-        <span class="pulse-dot"></span>
-        <span class="status-label">CV Engine Ready</span>
       </div>
-    </div>
-  </header>
+    </header>
 
-  <!-- Main App Shell -->
-  <main class="app-main">
+    <!-- Main Navigation Tabs -->
+    <nav class="app-tabs">
+      <button class="tab-btn active" data-tab="scanner">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        <span>Doc Scanner</span>
+      </button>
+      <button class="tab-btn" data-tab="teacher">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        <span>Teacher Keys</span>
+      </button>
+      <button class="tab-btn" data-tab="analytics">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        <span>Analytics</span>
+      </button>
+    </nav>
 
-    <!-- ═══════════════════════════════════════════════════════════════════════ -->
-    <!-- TAB 1: AUTO-CAPTURE SCANNER                                           -->
-    <!-- ═══════════════════════════════════════════════════════════════════════ -->
-    <section id="tab-scanner" class="tab-pane active">
-      <div class="scanner-layout">
+    <main class="app-main">
+      <!-- ═════════════════════════════════════════════════════════════════════
+           TAB 1: LIVE DOCSCANNER & EVALUATION
+           ═════════════════════════════════════════════════════════════════════ -->
+      <section id="tab-scanner" class="tab-pane active">
         
-        <!-- Camera Viewfinder & HUD -->
-        <div class="panel viewfinder-panel">
-          <div class="panel-header">
-            <div class="panel-title-wrap">
-              <h2 class="panel-title">OMR Optical Scanner</h2>
-              <span id="detection-status-pill" class="pill pill-searching">Searching for Sheet...</span>
-            </div>
-            
-            <div class="controls-toolbar">
-              <label class="toggle-switch" title="Auto-captures when sheet is aligned">
-                <input type="checkbox" id="chk-auto-capture" checked>
-                <span class="slider"></span>
-                <span class="toggle-label">Auto-Capture</span>
-              </label>
-              <button id="btn-switch-source" class="btn-tool" title="Switch between camera and file">
-                📁 File Upload
-              </button>
-            </div>
-          </div>
-
-          <!-- Configuration Strip -->
-          <div class="config-strip">
-            <div class="config-field">
-              <label for="select-exam">Assessment</label>
-              <select id="select-exam" class="select-input">
-                <option value="AOTS-ECET-003">AOTS-ECET-003 — ECET Grand Mock 01 (50 Qs)</option>
+        <!-- Live Camera Viewfinder & DocScanner HUD -->
+        <div class="scanner-viewfinder-container">
+          
+          <!-- Config Bar -->
+          <div class="exam-selector-strip">
+            <div class="exam-field">
+              <label>Exam:</label>
+              <select id="select-exam" class="compact-select">
+                <option value="AOTS-ECET-003">AOTS-ECET-003 — Grand Mock 01 (50 Qs)</option>
               </select>
             </div>
-            <div class="config-field">
-              <label for="input-student-id">Student ID / Roll No</label>
-              <input type="text" id="input-student-id" class="text-input" value="SM-ECET-2026-042" placeholder="e.g. ECET-042">
+            <div class="exam-field">
+              <label>Student:</label>
+              <input type="text" id="input-student-id" class="compact-input" value="SM-ECET-2026-042">
             </div>
           </div>
 
@@ -96,32 +83,34 @@
           <div id="viewfinder-wrapper" class="viewfinder-wrapper">
             <video id="camera-stream" autoplay playsinline muted></video>
             
-            <!-- Real-time HUD Guide -->
-            <div class="hud-overlay" id="hud-overlay">
-              <div class="hud-frame" id="hud-frame">
-                <div class="hud-corner tl"></div>
-                <div class="hud-corner tr"></div>
-                <div class="hud-corner br"></div>
-                <div class="hud-corner bl"></div>
-                <div class="hud-crosshair"></div>
-                
-                <!-- Auto-Capture Progress Bar inside HUD -->
-                <div class="hud-progress-wrap" id="hud-progress-wrap">
-                  <div class="hud-progress-bar" id="hud-progress-bar"></div>
-                </div>
+            <!-- Grid Lines Overlay -->
+            <div id="camera-grid-overlay" class="grid-lines-overlay" style="display: none;">
+              <div class="grid-line h-1"></div>
+              <div class="grid-line h-2"></div>
+              <div class="grid-line v-1"></div>
+              <div class="grid-line v-2"></div>
+            </div>
+
+            <!-- DocScanner Real-Time Cyan HUD Targeting Overlay -->
+            <div class="doc-hud-overlay" id="hud-overlay">
+              <canvas id="hud-contour-canvas"></canvas>
+
+              <!-- Floating Bottom Status Pill -->
+              <div class="floating-status-pill" id="floating-status-pill">
+                <div class="pulse-dot"></div>
+                <span id="floating-status-text">Finding document...</span>
               </div>
-              <div class="hud-message" id="hud-message">Point camera at OMR Sheet</div>
             </div>
 
             <!-- Shutter Flash Effect -->
             <div id="shutter-flash" class="shutter-flash"></div>
 
-            <!-- Off-screen Canvas for Frame Analysis & Snapshots -->
+            <!-- Off-screen Analysis Canvas -->
             <canvas id="analysis-canvas" style="display: none;"></canvas>
             <canvas id="snapshot-canvas" style="display: none;"></canvas>
           </div>
 
-          <!-- File Upload Dropzone (Alternative Mode) -->
+          <!-- File Upload Dropzone (Fallback Mode) -->
           <div id="file-dropzone" class="file-dropzone" style="display: none;">
             <input type="file" id="file-input" accept="image/*" class="file-input-hidden">
             <div class="dropzone-body">
@@ -134,50 +123,98 @@
             </div>
           </div>
 
-          <!-- Corner Adjustment Editor (CamScanner Mode) -->
+          <!-- ═════════════════════════════════════════════════════════════════
+               INTERACTIVE 4-CORNER CROP & EDGE ADJUSTER (DocScanner Mode)
+               ═════════════════════════════════════════════════════════════════ -->
           <div id="corner-editor-wrap" class="corner-editor-wrap" style="display: none;">
-            <div class="editor-top-bar">
-              <span id="editor-timer-badge" class="pill pill-warning">⏳ Auto-Grading in 10s... (Adjust if needed)</span>
+            <div class="editor-top-nav">
+              <span id="editor-timer-badge" class="doc-badge">⏳ Auto-Grading in 10s</span>
               <div class="editor-actions">
-                <button type="button" id="btn-editor-retake" class="btn-xs">🔄 Retake</button>
-                <button type="button" id="btn-editor-auto-align" class="btn-xs">⚡ Auto-Snap</button>
+                <button type="button" id="btn-editor-retake" class="doc-btn-ghost">🔄 Retake</button>
+                <button type="button" id="btn-editor-auto-align" class="doc-btn-ghost">⚡ Auto-Fit</button>
               </div>
             </div>
 
             <div class="editor-canvas-container" id="editor-canvas-container">
               <canvas id="crop-editor-canvas"></canvas>
-              <!-- 4 Interactive Draggable Handles -->
-              <div class="drag-handle" id="handle-tl" data-corner="tl"><span>TL</span></div>
-              <div class="drag-handle" id="handle-tr" data-corner="tr"><span>TR</span></div>
-              <div class="drag-handle" id="handle-br" data-corner="br"><span>BR</span></div>
-              <div class="drag-handle" id="handle-bl" data-corner="bl"><span>BL</span></div>
+              
+              <!-- 4 Vibrant Cyan Draggable Corner Dots -->
+              <div class="cyan-drag-handle" id="handle-tl" data-corner="tl"></div>
+              <div class="cyan-drag-handle" id="handle-tr" data-corner="tr"></div>
+              <div class="cyan-drag-handle" id="handle-br" data-corner="br"></div>
+              <div class="cyan-drag-handle" id="handle-bl" data-corner="bl"></div>
+
+              <!-- Magnifying Loupe / 2X Zoom Lens -->
+              <div id="magnifying-loupe" class="magnifying-loupe" style="display: none;">
+                <canvas id="loupe-canvas" width="120" height="120"></canvas>
+                <div class="loupe-crosshair"></div>
+              </div>
             </div>
 
-            <div class="editor-bottom-bar">
-              <p class="editor-hint">💡 Drag any corner dot with your finger to align perfectly with the paper</p>
-              <button type="button" id="btn-editor-confirm" class="btn btn-primary btn-block">
-                🚀 Grade Now With These Edges
+            <div class="editor-action-strip">
+              <p class="editor-instruction">💡 Drag cyan corner dots to align with paper edges</p>
+              <button type="button" id="btn-editor-confirm" class="doc-btn-primary">
+                ✓ Flatten & Grade Sheet
               </button>
             </div>
           </div>
 
-          <!-- Bottom Action Bar -->
-          <div class="panel-footer" id="main-panel-footer">
-            <button id="btn-sample-demo" class="btn btn-secondary">
-              ⚡ Load Sample Sheet
-            </button>
-            <button id="btn-manual-capture" class="btn btn-primary">
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
-              <span>Capture & Grade Sheet</span>
-            </button>
+          <!-- ═════════════════════════════════════════════════════════════════
+               DOCSCANNER BOTTOM SHUTTER DECK
+               ═════════════════════════════════════════════════════════════════ -->
+          <div class="doc-shutter-deck" id="doc-shutter-deck">
+            
+            <!-- Mode Selector Carousel -->
+            <div class="mode-carousel">
+              <span class="mode-item">Photo</span>
+              <span class="mode-item">ID Card</span>
+              <span class="mode-item active">Document</span>
+              <span class="mode-item">Book</span>
+              <span class="mode-item">Key</span>
+            </div>
+
+            <div class="shutter-row">
+              <!-- Left Gallery Badge -->
+              <div class="shutter-left">
+                <button id="btn-sample-demo" class="gallery-thumb-btn" title="Load Sample Sheet">
+                  <img id="recent-thumb-img" src="/static/test_sample.png" alt="Thumb">
+                  <span class="thumb-badge" id="scanned-count-badge">1</span>
+                </button>
+                <button id="btn-switch-source" class="mode-toggle-icon" title="Toggle Auto/Manual">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
+                  <span id="auto-mode-label">AUTO</span>
+                </button>
+              </div>
+
+              <!-- Main Cyan Camera Shutter Button -->
+              <div class="shutter-center">
+                <button id="btn-manual-capture" class="doc-shutter-btn" title="Take Photo">
+                  <div class="shutter-outer-ring">
+                    <div class="shutter-inner-core">
+                      <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="#fff" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                    </div>
+                  </div>
+                </button>
+              </div>
+
+              <!-- Right Finish Checkmark Button -->
+              <div class="shutter-right">
+                <button id="btn-finish-check" class="finish-check-btn" title="View Results">
+                  <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#fff" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                </button>
+              </div>
+            </div>
           </div>
+
         </div>
 
-        <!-- Right Side: Scorecard & Question Matrix -->
+        <!-- ═══════════════════════════════════════════════════════════════════
+             EVALUATION SCORECARD MODAL / RESULTS PANEL
+             ═══════════════════════════════════════════════════════════════════ -->
         <div class="panel scorecard-panel">
           <div class="panel-header">
             <h2 class="panel-title">Evaluation Scorecard</h2>
-            <button id="btn-scan-next" class="btn-tool" style="display: none;">
+            <button id="btn-scan-next" class="btn-sm" style="display: none;">
               ➕ Scan Next Sheet
             </button>
           </div>
@@ -185,231 +222,199 @@
           <!-- Empty State -->
           <div id="scorecard-empty" class="scorecard-empty">
             <div class="empty-illu">
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+              <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
             </div>
-            <h3>Ready for Optical Evaluation</h3>
-            <p>Align the OMR sheet inside the viewfinder. The system will automatically detect the sheet, trigger high-speed homography unwarping, and grade all 50 questions instantly.</p>
+            <h3>Scanner Ready</h3>
+            <p>Align the OMR sheet inside the viewfinder to auto-evaluate and grade.</p>
           </div>
 
           <!-- Populated Scorecard Result -->
           <div id="scorecard-result" class="scorecard-result" style="display: none;">
             
-            <!-- Main Score Card -->
             <div class="score-summary-box">
-              <div class="score-primary">
-                <span class="score-label">Total Score</span>
-                <div class="score-number-row">
-                  <span id="res-score-val" class="score-val">47.0</span>
+              <div class="score-main">
+                <div class="score-label">TOTAL SCORE</div>
+                <div class="score-val-wrap">
+                  <span id="res-score-val" class="score-val">0.0</span>
                   <span id="res-max-val" class="score-max">/ 50.0</span>
                 </div>
-                <div class="score-tag" id="res-grade-tag">Grade: 94.0%</div>
+                <div id="res-grade-tag" class="grade-tag">Percentage: 0.0%</div>
               </div>
 
-              <div class="score-metrics-grid">
-                <div class="metric-cell">
-                  <span class="metric-label">Accuracy</span>
-                  <span id="res-accuracy-val" class="metric-val text-success">100.0%</span>
+              <div class="score-meta-grid">
+                <div class="meta-item">
+                  <span class="meta-lbl">ACCURACY</span>
+                  <span id="res-accuracy-val" class="meta-val">0%</span>
                 </div>
-                <div class="metric-cell">
-                  <span class="metric-label">Percentage</span>
-                  <span id="res-pct-val" class="metric-val">94.0%</span>
+                <div class="meta-item">
+                  <span class="meta-lbl">PERCENTAGE</span>
+                  <span id="res-pct-val" class="meta-val">0%</span>
                 </div>
-                <div class="metric-cell">
-                  <span class="metric-label">CV Speed</span>
-                  <span id="res-speed-val" class="metric-val text-accent">18ms</span>
+                <div class="meta-item">
+                  <span class="meta-lbl">CV SPEED</span>
+                  <span id="res-speed-val" class="meta-val">0ms</span>
                 </div>
-                <div class="metric-cell">
-                  <span class="metric-label">Marking</span>
-                  <span class="metric-val">+1 / -0.25</span>
+                <div class="meta-item">
+                  <span class="meta-lbl">MARKING</span>
+                  <span class="meta-val">+1 / -0.25</span>
                 </div>
               </div>
             </div>
 
-            <!-- Breakdown Counters -->
-            <div class="breakdown-counters">
-              <div class="counter-card counter-correct">
-                <span class="counter-val" id="cnt-correct">47</span>
-                <span class="counter-label">Correct</span>
+            <!-- Stats Bar -->
+            <div class="stats-bar">
+              <div class="stat-pill stat-correct">
+                <span class="stat-num" id="cnt-correct">0</span>
+                <span class="stat-lbl">Correct</span>
               </div>
-              <div class="counter-card counter-wrong">
-                <span class="counter-val" id="cnt-wrong">0</span>
-                <span class="counter-label">Wrong</span>
+              <div class="stat-pill stat-wrong">
+                <span class="stat-num" id="cnt-wrong">0</span>
+                <span class="stat-lbl">Wrong</span>
               </div>
-              <div class="counter-card counter-blank">
-                <span class="counter-val" id="cnt-blank">3</span>
-                <span class="counter-label">Unanswered</span>
+              <div class="stat-pill stat-blank">
+                <span class="stat-num" id="cnt-blank">0</span>
+                <span class="stat-lbl">Unanswered</span>
               </div>
-              <div class="counter-card counter-multi">
-                <span class="counter-val" id="cnt-multi">0</span>
-                <span class="counter-label">Multiple</span>
-              </div>
-            </div>
-
-            <!-- 50 Question Response Matrix -->
-            <div class="matrix-header">
-              <span class="matrix-title">Question Response Grid</span>
-              <div class="matrix-legend">
-                <span class="legend-item"><span class="legend-dot correct"></span> Correct</span>
-                <span class="legend-item"><span class="legend-dot wrong"></span> Wrong</span>
-                <span class="legend-item"><span class="legend-dot blank"></span> Blank</span>
+              <div class="stat-pill stat-multi">
+                <span class="stat-num" id="cnt-multi">0</span>
+                <span class="stat-lbl">Multiple</span>
               </div>
             </div>
 
-            <div id="response-grid" class="response-grid">
-              <!-- Rendered by JS -->
+            <!-- 50-Question Response Grid -->
+            <div class="responses-wrapper">
+              <div class="responses-header">
+                <h3>Question Response Grid</h3>
+                <div class="legend">
+                  <span class="leg-item leg-correct">● Correct</span>
+                  <span class="leg-item leg-wrong">● Wrong</span>
+                  <span class="leg-item leg-blank">● Blank</span>
+                </div>
+              </div>
+              
+              <div id="response-grid" class="response-grid"></div>
             </div>
           </div>
         </div>
+      </section>
 
-      </div>
-    </section>
-
-    <!-- ═══════════════════════════════════════════════════════════════════════ -->
-    <!-- TAB 2: TEACHER PORTAL & TEST CREATION                                 -->
-    <!-- ═══════════════════════════════════════════════════════════════════════ -->
-    <section id="tab-teacher" class="tab-pane">
-      <div class="grid-split">
-        
-        <!-- Create Mock Test Panel -->
-        <div class="panel">
-          <div class="panel-header">
-            <h2 class="panel-title">Create Mock Assessment</h2>
-            <span class="pill pill-secure">🔒 AES-128 Key Encryption</span>
+      <!-- ═════════════════════════════════════════════════════════════════════
+           TAB 2: TEACHER PORTAL & KEY BUILDER
+           ═════════════════════════════════════════════════════════════════════ -->
+      <section id="tab-teacher" class="tab-pane">
+        <div class="portal-grid">
+          <div class="panel">
+            <div class="panel-header">
+              <h2 class="panel-title">Active Assessments & Locked Keys</h2>
+            </div>
+            <div id="tests-list-container" class="tests-list-container">
+              <div class="test-card-skeleton">Loading exams...</div>
+            </div>
           </div>
 
-          <form id="form-create-test" class="form-flow">
-            <div class="form-grid-2">
-              <div class="form-group">
-                <label>Assessment Title</label>
-                <input type="text" id="new-test-title" class="text-input" placeholder="e.g. ECET Grand Assessment 02" required>
-              </div>
-              <div class="form-group">
-                <label>Test Code</label>
-                <input type="text" id="new-test-code" class="text-input" placeholder="e.g. AOTS-ECET-004" required>
-              </div>
+          <div class="panel">
+            <div class="panel-header">
+              <h2 class="panel-title">Create Test & Encrypt Answer Key</h2>
             </div>
-
-            <div class="form-grid-3">
-              <div class="form-group">
-                <label>Correct Mark (+)</label>
-                <input type="number" step="0.25" id="new-test-marks-c" class="text-input" value="1.0">
-              </div>
-              <div class="form-group">
-                <label>Wrong Penalty (-)</label>
-                <input type="number" step="0.25" id="new-test-marks-w" class="text-input" value="0.25">
-              </div>
-              <div class="form-group">
-                <label>Duration (mins)</label>
-                <input type="number" id="new-test-duration" class="text-input" value="120">
-              </div>
-            </div>
-
-            <!-- Answer Key Builder -->
-            <div class="key-builder-block">
-              <div class="key-builder-header">
-                <div>
-                  <h3 class="key-builder-title">50-Question Official Answer Key</h3>
-                  <p class="key-builder-sub">Answer key is locked and encrypted before storage</p>
+            
+            <form id="form-create-test" class="create-test-form">
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="new-test-title">Test Title</label>
+                  <input type="text" id="new-test-title" required placeholder="e.g. ECET Grand Mock 02">
                 </div>
-                <div class="key-builder-actions">
-                  <button type="button" id="btn-key-preset-1" class="btn-sm">Preset A-D</button>
-                  <button type="button" id="btn-key-random" class="btn-sm">Randomize</button>
-                  <button type="button" id="btn-key-clear" class="btn-sm">Clear</button>
+                <div class="form-group">
+                  <label for="new-test-code">Test Code</label>
+                  <input type="text" id="new-test-code" required placeholder="e.g. AOTS-ECET-004">
                 </div>
               </div>
 
-              <div id="key-picker-grid" class="key-picker-grid">
-                <!-- Generated by JS -->
+              <div class="form-row three-col">
+                <div class="form-group">
+                  <label for="new-test-marks-c">Marks per Correct</label>
+                  <input type="number" id="new-test-marks-c" step="0.25" value="1.0" required>
+                </div>
+                <div class="form-group">
+                  <label for="new-test-marks-w">Negative Marks</label>
+                  <input type="number" id="new-test-marks-w" step="0.05" value="0.25" required>
+                </div>
+                <div class="form-group">
+                  <label for="new-test-duration">Duration (Mins)</label>
+                  <input type="number" id="new-test-duration" value="180" required>
+                </div>
               </div>
+
+              <!-- Answer Key Matrix Picker -->
+              <div class="answer-key-builder-wrap">
+                <div class="key-builder-head">
+                  <label>Define 50-Question Answer Key</label>
+                  <div class="quick-fill-tools">
+                    <button type="button" id="btn-key-preset-1" class="btn-xs">Pattern ABCD</button>
+                    <button type="button" id="btn-key-random" class="btn-xs">Random</button>
+                    <button type="button" id="btn-key-clear" class="btn-xs">All A</button>
+                  </div>
+                </div>
+
+                <div id="key-picker-grid" class="key-picker-grid"></div>
+              </div>
+
+              <button type="submit" class="btn btn-primary btn-block">
+                🔒 Encrypt Key & Deploy Assessment
+              </button>
+            </form>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═════════════════════════════════════════════════════════════════════
+           TAB 3: CLASS ANALYTICS & ITEM HEATMAP
+           ═════════════════════════════════════════════════════════════════════ -->
+      <section id="tab-analytics" class="tab-pane">
+        <div class="analytics-header-panel panel">
+          <div class="analytics-toolbar">
+            <div class="analytics-select-wrap">
+              <label for="analytics-exam-select">Select Exam:</label>
+              <select id="analytics-exam-select" class="select-input">
+                <option value="AOTS-ECET-003">AOTS-ECET-003</option>
+              </select>
             </div>
-
-            <button type="submit" class="btn btn-primary btn-block">
-              🔐 Lock Answer Key & Save Assessment
-            </button>
-          </form>
-        </div>
-
-        <!-- Active Tests List -->
-        <div class="panel">
-          <div class="panel-header">
-            <h2 class="panel-title">Active Assessments Directory</h2>
-            <button id="btn-refresh-tests" class="btn-tool">🔄 Refresh</button>
-          </div>
-          <div id="tests-list-container" class="tests-list">
-            <!-- Rendered by JS -->
-          </div>
-        </div>
-
-      </div>
-    </section>
-
-    <!-- ═══════════════════════════════════════════════════════════════════════ -->
-    <!-- TAB 3: CLASS ANALYTICS & ITEM DIFFICULTY                              -->
-    <!-- ═══════════════════════════════════════════════════════════════════════ -->
-    <section id="tab-analytics" class="tab-pane">
-      <div class="panel mb-4">
-        <div class="analytics-top-bar">
-          <div>
-            <h2 class="panel-title">Class Performance & Question Difficulty Analysis</h2>
-            <p class="panel-subtitle">Diagnose weak concepts and student option distribution across exams</p>
-          </div>
-          <div class="analytics-controls">
-            <select id="analytics-exam-select" class="select-input"></select>
-            <a id="btn-export-csv" href="/api/export/AOTS-ECET-003.csv" class="btn btn-secondary">
-              📥 Export CSV Report
+            <a id="btn-export-csv" href="/api/export/AOTS-ECET-003.csv" class="btn btn-secondary" download>
+              📊 Export Class CSV
             </a>
           </div>
         </div>
-      </div>
 
-      <div class="grid-split">
+        <div class="portal-grid">
+          <div class="panel">
+            <div class="panel-header">
+              <h2 class="panel-title">🏆 Top Rankers (Leaderboard)</h2>
+            </div>
+            <div id="toppers-container" class="toppers-container">
+              <p class="empty-msg">No submissions recorded yet.</p>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-header">
+              <h2 class="panel-title">⚠️ Flagged Difficult Questions (&gt;60% Failed)</h2>
+            </div>
+            <div id="flagged-questions-container" class="flagged-container">
+              <p class="empty-msg">No flagged questions.</p>
+            </div>
+          </div>
+        </div>
+
         <div class="panel">
           <div class="panel-header">
-            <h2 class="panel-title">Top Performers Leaderboard</h2>
+            <h2 class="panel-title">📊 50-Question Item Accuracy Matrix</h2>
           </div>
-          <div id="toppers-container" class="toppers-list"></div>
+          <div id="full-item-matrix" class="item-matrix-grid"></div>
         </div>
+      </section>
+    </main>
 
-        <div class="panel">
-          <div class="panel-header">
-            <h2 class="panel-title">High-Difficulty Questions (Flagged >60% Fail)</h2>
-          </div>
-          <div id="flagged-questions-container" class="flagged-list"></div>
-        </div>
-      </div>
-
-      <div class="panel mt-4">
-        <div class="panel-header">
-          <h2 class="panel-title">50-Question Item Performance Grid</h2>
-        </div>
-        <div id="full-item-matrix" class="item-matrix"></div>
-      </div>
-    </section>
-
-    <!-- ═══════════════════════════════════════════════════════════════════════ -->
-    <!-- TAB 4: PRINTABLE TEMPLATE                                             -->
-    <!-- ═══════════════════════════════════════════════════════════════════════ -->
-    <section id="tab-template" class="tab-pane">
-      <div class="panel template-panel">
-        <div class="panel-header">
-          <div>
-            <h2 class="panel-title">Official Standard AOTS 50-Question OMR Sheet</h2>
-            <p class="panel-subtitle">High-contrast layout with 4 corner fiducial alignment blocks</p>
-          </div>
-          <a href="/api/tests/template/download" class="btn btn-primary" download>
-            📥 Download Printable PNG
-          </a>
-        </div>
-        <div class="template-img-box">
-          <img src="/api/tests/template/download" alt="OMR Template" class="template-img">
-        </div>
-      </div>
-    </section>
-
-  </main>
-
-  <!-- Toast Notification -->
-  <div id="toast" class="toast"></div>
+    <div id="toast" class="toast"></div>
+  </div>
 
   <script src="/static/app.js"></script>
 </body>
