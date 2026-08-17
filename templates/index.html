@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AOTS — Automated Optical Testing System</title>
+  <meta name="description" content="High-Precision OMR Scanning, Instant Scoring & Analytics Platform">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <!-- Background Glow Accents -->
+  <div class="glow-orb orb-1"></div>
+  <div class="glow-orb orb-2"></div>
+
+  <!-- Header Navigation -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="brand-group">
+        <div class="brand-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2"/>
+            <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/>
+            <circle cx="15.5" cy="8.5" r="1.5" fill="currentColor"/>
+            <circle cx="8.5" cy="15.5" r="1.5" fill="currentColor"/>
+            <circle cx="15.5" cy="15.5" r="1.5" fill="currentColor"/>
+          </svg>
+        </div>
+        <div>
+          <h1 class="brand-title">AOTS</h1>
+          <p class="brand-subtitle">Automated Optical Testing System</p>
+        </div>
+      </div>
+
+      <nav class="nav-tabs" role="tablist">
+        <button class="tab-btn active" data-tab="scanner" role="tab">
+          <span class="icon">📷</span> Live Scanner
+        </button>
+        <button class="tab-btn" data-tab="teacher" role="tab">
+          <span class="icon">👨‍🏫</span> Teacher Portal
+        </button>
+        <button class="tab-btn" data-tab="analytics" role="tab">
+          <span class="icon">📊</span> Class Analytics
+        </button>
+        <button class="tab-btn" data-tab="template" role="tab">
+          <span class="icon">📄</span> OMR Template
+        </button>
+      </nav>
+
+      <div class="user-badge">
+        <span class="status-indicator"></span>
+        <span id="active-user-role">Demo Mode: Teacher</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="main-container">
+    
+    <!-- ═══════════════════════════════════════════════════════════════════════ -->
+    <!-- TAB 1: LIVE SCANNER                                                   -->
+    <!-- ═══════════════════════════════════════════════════════════════════════ -->
+    <section id="tab-scanner" class="tab-content active">
+      <div class="scanner-grid">
+        
+        <!-- Left: Camera / Upload Viewfinder -->
+        <div class="card scanner-card">
+          <div class="card-header">
+            <h2>Scan OMR Sheet</h2>
+            <div class="mode-toggle">
+              <button id="btn-mode-camera" class="toggle-btn active">📱 Camera</button>
+              <button id="btn-mode-file" class="toggle-btn">📁 Upload File</button>
+            </div>
+          </div>
+
+          <!-- Exam Selection -->
+          <div class="form-row">
+            <div class="form-group">
+              <label for="select-exam">Select Exam</label>
+              <select id="select-exam" class="input-control">
+                <option value="AOTS-ECET-003">AOTS-ECET-003 — ECET Mock Grand Assessment 01</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="input-student-id">Student ID / Roll No</label>
+              <input type="text" id="input-student-id" class="input-control" value="SM-ECET-2026-042" placeholder="e.g. ECET-2026-001">
+            </div>
+          </div>
+
+          <!-- Camera Viewfinder -->
+          <div id="camera-container" class="viewfinder-box">
+            <video id="camera-stream" autoplay playsinline muted></video>
+            <div class="viewfinder-overlay">
+              <div class="corner-bracket tl"></div>
+              <div class="corner-bracket tr"></div>
+              <div class="corner-bracket br"></div>
+              <div class="corner-bracket bl"></div>
+              <div class="guide-text">Align OMR Sheet 4 Corners inside brackets</div>
+            </div>
+            <canvas id="capture-canvas" style="display: none;"></canvas>
+          </div>
+
+          <!-- File Upload Zone -->
+          <div id="file-container" class="upload-dropzone" style="display: none;">
+            <input type="file" id="file-input" accept="image/*" class="file-hidden">
+            <div class="dropzone-content">
+              <div class="upload-icon">📸</div>
+              <p class="upload-primary">Drag and drop OMR photo or <span class="highlight">browse</span></p>
+              <p class="upload-sub">Supports JPG, PNG with high resolution</p>
+            </div>
+            <div id="file-preview-wrap" style="display: none;">
+              <img id="file-preview-img" src="" alt="OMR Preview">
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="scanner-actions">
+            <button id="btn-sample-demo" class="btn btn-secondary">
+              ⚡ Load Sample Sheet
+            </button>
+            <button id="btn-scan-grade" class="btn btn-primary btn-large">
+              <span>🚀 Scan & Calculate Score</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Right: Real-Time Scorecard Results -->
+        <div class="card result-card">
+          <div class="card-header">
+            <h2>Instant Scorecard</h2>
+            <span id="scan-status-badge" class="badge badge-idle">Ready to scan</span>
+          </div>
+
+          <div id="result-placeholder" class="empty-state">
+            <div class="empty-icon">🎯</div>
+            <h3>No Exam Scanned Yet</h3>
+            <p>Capture or upload an OMR sheet photo to get instant question-by-question grading.</p>
+          </div>
+
+          <!-- Animated Result Container -->
+          <div id="result-content" style="display: none;">
+            <!-- Score Banner -->
+            <div class="score-banner">
+              <div class="score-dial">
+                <span id="res-score-value" class="score-main">47.0</span>
+                <span id="res-score-max" class="score-sub">/ 50.0</span>
+              </div>
+              <div class="score-meta">
+                <div class="meta-item">
+                  <span class="meta-label">Accuracy</span>
+                  <span id="res-accuracy" class="meta-val highlight-green">100%</span>
+                </div>
+                <div class="meta-item">
+                  <span class="meta-label">Percentage</span>
+                  <span id="res-percentage" class="meta-val">94.0%</span>
+                </div>
+                <div class="meta-item">
+                  <span class="meta-label">Scan Speed</span>
+                  <span id="res-speed" class="meta-val">18ms</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Stats Row -->
+            <div class="stats-mini-grid">
+              <div class="stat-pill correct">
+                <span class="stat-icon">✅</span>
+                <div>
+                  <div id="res-correct" class="stat-num">47</div>
+                  <div class="stat-name">Correct</div>
+                </div>
+              </div>
+              <div class="stat-pill wrong">
+                <span class="stat-icon">❌</span>
+                <div>
+                  <div id="res-wrong" class="stat-num">0</div>
+                  <div class="stat-name">Wrong (-0.25)</div>
+                </div>
+              </div>
+              <div class="stat-pill unattempted">
+                <span class="stat-icon">⚪</span>
+                <div>
+                  <div id="res-unanswered" class="stat-num">3</div>
+                  <div class="stat-name">Unanswered</div>
+                </div>
+              </div>
+              <div class="stat-pill multiple">
+                <span class="stat-icon">🚫</span>
+                <div>
+                  <div id="res-multiple" class="stat-num">0</div>
+                  <div class="stat-name">Multiple</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Question Matrix -->
+            <h4 class="section-title">Question-by-Question Breakdown</h4>
+            <div id="question-matrix" class="matrix-grid">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════ -->
+    <!-- TAB 2: TEACHER PORTAL                                                 -->
+    <!-- ═══════════════════════════════════════════════════════════════════════ -->
+    <section id="tab-teacher" class="tab-content">
+      <div class="grid-2col">
+        
+        <!-- Create Mock Test -->
+        <div class="card">
+          <div class="card-header">
+            <h2>Create New Mock Assessment</h2>
+            <span class="badge badge-locked">🔒 AES-128 Key Encryption</span>
+          </div>
+
+          <form id="form-create-test">
+            <div class="form-row">
+              <div class="form-group">
+                <label>Test Title</label>
+                <input type="text" id="new-test-title" class="input-control" placeholder="e.g. ECET Grand Mock Assessment 02" required>
+              </div>
+              <div class="form-group">
+                <label>Test Code</label>
+                <input type="text" id="new-test-code" class="input-control" placeholder="e.g. AOTS-ECET-004" required>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label>Correct Mark (+)</label>
+                <input type="number" step="0.25" id="new-test-marks-c" class="input-control" value="1.0">
+              </div>
+              <div class="form-group">
+                <label>Wrong Penalty (-)</label>
+                <input type="number" step="0.25" id="new-test-marks-w" class="input-control" value="0.25">
+              </div>
+              <div class="form-group">
+                <label>Duration (mins)</label>
+                <input type="number" id="new-test-duration" class="input-control" value="120">
+              </div>
+            </div>
+
+            <!-- Answer Key Builder -->
+            <div class="answer-key-builder-section">
+              <div class="builder-header">
+                <h3>50-Question Answer Key Definition</h3>
+                <div class="key-tools">
+                  <button type="button" id="btn-key-preset-1" class="btn-xs">Preset A/B/C/D</button>
+                  <button type="button" id="btn-key-random" class="btn-xs">Randomize</button>
+                  <button type="button" id="btn-key-clear" class="btn-xs">Clear</button>
+                </div>
+              </div>
+
+              <div id="key-picker-grid" class="key-picker-grid">
+                <!-- 50 Rows generated dynamically by JS -->
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-large full-width mt-4">
+              🔐 Lock Answer Key & Create Test
+            </button>
+          </form>
+        </div>
+
+        <!-- Active Tests List -->
+        <div class="card">
+          <div class="card-header">
+            <h2>Active Assessments</h2>
+            <button id="btn-refresh-tests" class="btn-xs">🔄 Refresh</button>
+          </div>
+          <div id="tests-list-container" class="tests-list">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════ -->
+    <!-- TAB 3: CLASS ANALYTICS & ITEM DIFFICULTY                              -->
+    <!-- ═══════════════════════════════════════════════════════════════════════ -->
+    <section id="tab-analytics" class="tab-content">
+      <div class="card analytics-header-card mb-4">
+        <div class="analytics-bar">
+          <div>
+            <h2>Exam Performance & Question Item Analysis</h2>
+            <p>Real-time distractor tracking & weak question diagnosis for teachers</p>
+          </div>
+          <div class="analytics-actions">
+            <select id="analytics-exam-select" class="input-control">
+              <option value="AOTS-ECET-003">AOTS-ECET-003</option>
+            </select>
+            <a id="btn-export-csv" href="/api/export/AOTS-ECET-003.csv" class="btn btn-secondary">
+              📥 Export CSV
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-2col">
+        <!-- Class Stats & Toppers -->
+        <div class="card">
+          <div class="card-header">
+            <h2>Top Performers Leaderboard</h2>
+          </div>
+          <div id="toppers-container" class="toppers-list">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+
+        <!-- Flagged Questions Heatmap -->
+        <div class="card">
+          <div class="card-header">
+            <h2>High-Difficulty Questions (Flagged >60% Fail)</h2>
+            <span class="badge badge-warning">Action Required</span>
+          </div>
+          <div id="flagged-questions-container" class="flagged-list">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- 50 Question Distractor Analysis Grid -->
+      <div class="card mt-4">
+        <div class="card-header">
+          <h2>Full 50-Question Item Analysis Matrix</h2>
+        </div>
+        <div id="full-item-matrix" class="item-analysis-matrix">
+          <!-- Rendered by JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════ -->
+    <!-- TAB 4: PRINTABLE OMR TEMPLATE                                         -->
+    <!-- ═══════════════════════════════════════════════════════════════════════ -->
+    <section id="tab-template" class="tab-content">
+      <div class="card template-viewer-card">
+        <div class="card-header">
+          <div>
+            <h2>Official AOTS Standard OMR Sheet Template</h2>
+            <p>High-resolution printable sheet with 4 corner fiducial alignment boxes</p>
+          </div>
+          <a href="/api/tests/template/download" class="btn btn-primary" download>
+            📥 Download Printable PNG
+          </a>
+        </div>
+
+        <div class="template-preview-wrapper">
+          <img src="/api/tests/template/download" alt="AOTS Official OMR Sheet" class="template-full-img">
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Notification Toast -->
+  <div id="toast" class="toast"></div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
