@@ -12,8 +12,8 @@
       "accuracy_pct": 100.0,
       "correct": 50,
       "total": 50,
-      "processing_time": 0.022,
-      "confidence": 0.985,
+      "processing_time": 0.043,
+      "confidence": 0.926,
       "mismatch_count": 0
     },
     {
@@ -23,8 +23,8 @@
       "accuracy_pct": 100.0,
       "correct": 50,
       "total": 50,
-      "processing_time": 0.017,
-      "confidence": 0.969,
+      "processing_time": 0.027,
+      "confidence": 0.892,
       "mismatch_count": 0
     },
     {
@@ -34,8 +34,8 @@
       "accuracy_pct": 100.0,
       "correct": 50,
       "total": 50,
-      "processing_time": 0.016,
-      "confidence": 0.96,
+      "processing_time": 0.028,
+      "confidence": 0.897,
       "mismatch_count": 0
     },
     {
@@ -45,8 +45,8 @@
       "accuracy_pct": 100.0,
       "correct": 50,
       "total": 50,
-      "processing_time": 0.014,
-      "confidence": 0.968,
+      "processing_time": 0.027,
+      "confidence": 0.733,
       "mismatch_count": 0
     },
     {
@@ -56,8 +56,8 @@
       "accuracy_pct": 100.0,
       "correct": 50,
       "total": 50,
-      "processing_time": 0.016,
-      "confidence": 0.895,
+      "processing_time": 0.04,
+      "confidence": 0.862,
       "mismatch_count": 0
     },
     {
@@ -67,8 +67,8 @@
       "accuracy_pct": 100.0,
       "correct": 50,
       "total": 50,
-      "processing_time": 0.017,
-      "confidence": 0.954,
+      "processing_time": 0.034,
+      "confidence": 0.875,
       "mismatch_count": 0
     },
     {
@@ -78,8 +78,8 @@
       "accuracy_pct": 100.0,
       "correct": 50,
       "total": 50,
-      "processing_time": 0.018,
-      "confidence": 0.984,
+      "processing_time": 0.035,
+      "confidence": 0.908,
       "mismatch_count": 0
     },
     {
@@ -89,8 +89,8 @@
       "accuracy_pct": 100.0,
       "correct": 50,
       "total": 50,
-      "processing_time": 0.032,
-      "confidence": 1.0,
+      "processing_time": 0.049,
+      "confidence": 0.935,
       "mismatch_count": 0
     },
     {
@@ -100,8 +100,8 @@
       "accuracy_pct": 100.0,
       "correct": 50,
       "total": 50,
-      "processing_time": 0.016,
-      "confidence": 0.989,
+      "processing_time": 0.037,
+      "confidence": 0.932,
       "mismatch_count": 0
     },
     {
@@ -111,8 +111,8 @@
       "accuracy_pct": 100.0,
       "correct": 50,
       "total": 50,
-      "processing_time": 0.032,
-      "confidence": 0.955,
+      "processing_time": 0.054,
+      "confidence": 0.924,
       "mismatch_count": 0
     }
   ]

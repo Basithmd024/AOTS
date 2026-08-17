@@ -347,22 +347,36 @@ def align_sheet(image: np.ndarray, spec: dict, debug: bool = False) -> np.ndarra
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Stage 3 — Image Preprocessing
+# Stage 3 — Image Preprocessing & CamScanner-Grade Shadow Normalization
 # ─────────────────────────────────────────────────────────────────────────────
+
+def remove_shadows(gray: np.ndarray) -> np.ndarray:
+    """
+    CamScanner-grade shadow removal:
+    Estimates background illumination field using morphological dilation
+    and median blur, then divides/normalizes out shadows, glare, and uneven lighting.
+    """
+    dilated = cv2.dilate(gray, np.ones((7, 7), np.uint8))
+    bg_blur = cv2.medianBlur(dilated, 21)
+    diff = 255 - cv2.absdiff(gray, bg_blur)
+    norm = cv2.normalize(diff, None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8U)
+    return norm
+
 
 def preprocess(image: np.ndarray, debug: bool = False) -> np.ndarray:
     """
     Convert to clean binary image optimized for bubble detection.
-    Uses Otsu's method for global threshold on white-paper OMR sheets,
-    with adaptive threshold as secondary signal.
+    Applies shadow removal, Gaussian blur, and Otsu's bimodal thresholding.
     """
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     
-    # Light Gaussian blur to reduce noise without destroying bubble fills
-    blurred = cv2.GaussianBlur(gray, (3, 3), 0)
+    # Step 1: Normalize uneven lighting and shadows
+    normalized = remove_shadows(gray)
     
-    # Otsu's thresholding — automatically finds optimal threshold for
-    # bimodal distribution (white paper + dark marks)
+    # Step 2: Light Gaussian blur to eliminate tiny graininess
+    blurred = cv2.GaussianBlur(normalized, (3, 3), 0)
+    
+    # Step 3: Otsu binarization
     otsu_thresh, binary_otsu = cv2.threshold(
         blurred, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU
     )
