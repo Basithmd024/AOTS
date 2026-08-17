@@ -1,6 +1,6 @@
-# 📄 Said Medha Institute — High-Precision OMR Evaluation Engine
+# 📄 AOTS — High-Precision OMR Evaluation Engine
 
-Automated Optical Mark Recognition (OMR) assessment engine built for **Said Medha Institute** ECET mock examinations. Evaluates smartphone photos of filled OMR sheets with **100% detection accuracy**, sub-30ms processing latency, and tamper-evident answer key encryption.
+Automated Optical Mark Recognition (OMR) assessment engine built for **AOTS** ECET mock examinations. Evaluates smartphone photos of filled OMR sheets with **100% detection accuracy**, sub-30ms processing latency, and tamper-evident answer key encryption.
 
 ---
 
@@ -88,4 +88,4 @@ python3 test_scoring.py
 ---
 
 ## 📄 License
-Internal proprietary assessment platform for Said Medha Institute.
+Internal proprietary assessment platform for AOTS.

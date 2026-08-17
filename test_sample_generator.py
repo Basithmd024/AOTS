@@ -1,6 +1,6 @@
 """
-Said Medha Institute - OMR Test Sample Generator
-=================================================
+AOTS - OMR Test Sample Generator
+================================
 Generates synthetic filled OMR sheets for testing the engine.
 
 Creates multiple test scenarios:

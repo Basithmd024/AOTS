@@ -1,6 +1,6 @@
 """
-Said Medha Institute - Scoring & Answer Key Engine (Phase 2)
-============================================================
+AOTS - Scoring & Answer Key Engine (Phase 2)
+============================================
 Handles:
 1. Answer key schema validation & tamper-evident Fernet encryption
 2. Flexible marking schemes (positive marks, negative marking, multiple marks policy)

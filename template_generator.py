@@ -1,5 +1,5 @@
 """
-Said Medha Institute - OMR Template & Layout Generator
+AOTS - OMR Template & Layout Generator
 Generates:
 1. template_spec.json (canonical coordinate map of all fiducials and bubbles)
 2. blank_omr.png (high-resolution standard printable OMR sheet)
@@ -69,7 +69,7 @@ def create_omr_template(output_dir: str = "."):
         font_q = ImageFont.load_default()
         font_opt = ImageFont.load_default()
         
-    draw.text((CANVAS_WIDTH // 2, header_top + 28), "SAID MEDHA INSTITUTE", fill=(0, 0, 0), font=font_title, anchor="mm")
+    draw.text((CANVAS_WIDTH // 2, header_top + 28), "AOTS EXAMINATION SYSTEM", fill=(0, 0, 0), font=font_title, anchor="mm")
     draw.text((CANVAS_WIDTH // 2, header_top + 65), "ECET PREPARATION EXAM — OFFICIAL OMR ANSWER SHEET", fill=(60, 60, 60), font=font_sub, anchor="mm")
     
     # Metadata fields in header
@@ -171,7 +171,7 @@ def create_omr_template(output_dir: str = "."):
     render_question_block(26, 50, col2_start_x)
 
     # Footer note
-    draw.text((CANVAS_WIDTH // 2, CANVAS_HEIGHT - corner_offset - 25), "Said Medha Institute ECET Assessment Engine • System-Generated OMR Template • Do Not Fold", fill=(120, 120, 120), font=font_sub, anchor="mm")
+    draw.text((CANVAS_WIDTH // 2, CANVAS_HEIGHT - corner_offset - 25), "AOTS ECET Assessment Engine • System-Generated OMR Template • Do Not Fold", fill=(120, 120, 120), font=font_sub, anchor="mm")
 
     # Save Template Image
     template_img_path = os.path.join(output_dir, "blank_omr.png")

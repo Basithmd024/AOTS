@@ -1,6 +1,6 @@
 """
-Said Medha Institute - Comprehensive Scoring & Integration Test Suite (Phase 2)
-================================================================================
+AOTS - Comprehensive Scoring & Integration Test Suite (Phase 2)
+================================================================
 Verifies:
 1. Answer key encryption/decryption round-trip
 2. Marking scheme math (positive marks, negative marks, multiple marks penalties)

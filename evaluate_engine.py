@@ -1,6 +1,6 @@
 """
-Said Medha Institute - OMR Engine Accuracy Evaluator
-=====================================================
+AOTS - OMR Engine Accuracy Evaluator
+====================================
 Runs the OMR engine against all test samples and compares
 with ground truth to produce an accuracy report.
 
@@ -101,7 +101,7 @@ def run_evaluation(test_dir: str = "test_samples",
         manifest = json.load(f)
     
     print("=" * 70)
-    print("  Said Medha OMR Engine — Accuracy Evaluation Report")
+    print("  AOTS OMR Engine — Accuracy Evaluation Report")
     print("=" * 70)
     print()
     

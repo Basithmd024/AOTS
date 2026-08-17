@@ -1,6 +1,6 @@
 """
-Said Medha Institute - Unified OMR Evaluation & Grading CLI (Phase 2)
-=====================================================================
+AOTS - Unified OMR Evaluation & Grading CLI (Phase 2)
+=====================================================
 Single-command end-to-end pipeline:
   Image Photo + Answer Key (or Encrypted Key) -> Instant Detailed Grading & Scorecard
 
@@ -29,7 +29,7 @@ def print_formatted_card(report: dict, student_view_only: bool = False):
     scheme = report["marking_scheme"]
 
     print("\n" + "=" * 70)
-    print("  SAID MEDHA INSTITUTE — ECET EXAMINATION SCORECARD")
+    print("  AOTS — EXAMINATION SCORECARD")
     print("=" * 70)
     print(f"  Student ID:     {report.get('student_id', 'N/A')}")
     print(f"  Test Code:      {report.get('test_code', 'N/A')}")
@@ -73,7 +73,7 @@ def print_formatted_card(report: dict, student_view_only: bool = False):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Said Medha Institute — End-to-End OMR Grading CLI"
+        description="AOTS — End-to-End OMR Grading CLI"
     )
     parser.add_argument("image", help="Path to the OMR sheet photo/image")
     parser.add_argument("--key-file", "-k", help="Path to answer key JSON file")

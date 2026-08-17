@@ -1,12 +1,6 @@
 """
-Said Medha Institute - Core OMR Engine (Phase 1) — v2 REWRITE
-==============================================================
-Fixed critical issues from v1:
-  1. Fiducial detection was finding wrong contours → degenerate warp → all black
-  2. Now uses smart dual-path: skip warp for matching-size images, robust
-     quadrant-based marker search for real photos
-  3. Improved threshold handling for white-background OMR sheets
-
+AOTS - Core OMR Engine (Phase 1)
+================================
 6-Stage Computer Vision Pipeline:
   Stage 1: Image Quality Validation (blur, exposure)
   Stage 2: Sheet Alignment (auto-detect if warp needed, fiducial-based warp)
@@ -627,7 +621,7 @@ def process_omr_sheet(
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Said Medha Institute — OMR Sheet Evaluation Engine v2"
+        description="AOTS — OMR Sheet Evaluation Engine"
     )
     parser.add_argument("image", help="Path to the OMR sheet image")
     parser.add_argument(

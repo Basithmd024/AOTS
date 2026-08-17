@@ -1,10 +1,10 @@
-# 📄 Said Medha Institute — OMR Evaluation System
+# 📄 AOTS — OMR Evaluation System
 ## System Architecture, CV Pipeline & Phase-1 Engine Specification
 
 ---
 
 ## 🎯 Executive Summary & Mission
-**Said Medha Institute** conducts ECET competitive exam coaching. Currently, teachers manually evaluate paper OMR sheets using answer keys and pens, leading to delayed results, human grading fatigue, and lack of actionable student analytics.
+**AOTS (Automated Optical Testing System)** conducts ECET competitive exam evaluations. Currently, teachers manually evaluate paper OMR sheets using answer keys and pens, leading to delayed results, human grading fatigue, and lack of actionable student analytics.
 
 ### The Objective
 Build a robust, accurate, and automated OMR evaluation platform. 
@@ -110,7 +110,7 @@ The computer vision engine transforms an arbitrary, perspective-distorted smartp
 
 #### 4. Stage 4 — Bubble Location & Coordinate Grid System
 * **Coordinate Mapping Strategy**: **Deterministic Layout Grid** (Approach B).
-* Since Said Medha uses a fixed, standardized sheet layout, every bubble is defined as a normalized relative bounding box:
+* Since AOTS uses a fixed, standardized sheet layout, every bubble is defined as a normalized relative bounding box:
   $$\text{Bubble}(Q_i, \text{Opt}_j) = [X_{\text{rel}}, Y_{\text{rel}}, W_{\text{rel}}, H_{\text{rel}}]$$
 * **Grid Structure (Example for 50 Questions, 4 Options A/B/C/D)**:
   * **Column 1**: Questions 1 to 25
@@ -203,7 +203,7 @@ The computer vision engine transforms an arbitrary, perspective-distorted smartp
 │
 └── PHASE 5 ────────────────── Analytics, Export & Live Deployment
     ├── Step 5.1: Question Difficulty & Distractor Analysis
-    └── Step 5.2: Excel/PDF Export for Said Medha Institute
+    └── Step 5.2: Excel/PDF Export for AOTS Platform
 ```
 
 ---
