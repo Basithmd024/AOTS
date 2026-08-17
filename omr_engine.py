@@ -115,80 +115,69 @@ def find_sheet_contour(image: np.ndarray, debug: bool = False) -> np.ndarray:
 def find_fiducial_by_template(image: np.ndarray, spec: dict,
                               debug: bool = False) -> np.ndarray:
     """
-    Quadrant-based fiducial marker search.
-    Divides image into 4 quadrants and finds the darkest square-like
-    cluster in each quadrant as the corner marker.
+    Robust full-image fiducial marker search.
+    Finds dark square-like clusters across multiple threshold levels,
+    groups them relative to the document center, and returns the 4 corner points.
     """
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     h, w = gray.shape
-    
-    # Apply strong threshold to isolate markers (they are the darkest elements)
-    _, binary = cv2.threshold(gray, 80, 255, cv2.THRESH_BINARY_INV)
-    
-    # Quadrant search regions (generous overlap)
-    quadrants = {
-        "top_left": (0, 0, w // 3, h // 3),
-        "top_right": (2 * w // 3, 0, w, h // 3),
-        "bottom_right": (2 * w // 3, 2 * h // 3, w, h),
-        "bottom_left": (0, 2 * h // 3, w // 3, h)
-    }
-    
-    corners = []
-    corner_names = ["top_left", "top_right", "bottom_right", "bottom_left"]
-    
-    canvas_w = spec["canvas_size"]["width"]
-    canvas_h = spec["canvas_size"]["height"]
-    
-    for name in corner_names:
-        x1, y1, x2, y2 = quadrants[name]
-        roi = binary[y1:y2, x1:x2]
-        
-        contours, _ = cv2.findContours(roi, cv2.RETR_EXTERNAL, 
-                                        cv2.CHAIN_APPROX_SIMPLE)
-        
-        best_center = None
-        best_score = -1
-        
+    blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+
+    canvas_w = spec.get("canvas_size", {}).get("width", 1200)
+    canvas_h = spec.get("canvas_size", {}).get("height", 1600)
+
+    for th in [70, 90, 110, 130, 150]:
+        _, binary = cv2.threshold(blurred, th, 255, cv2.THRESH_BINARY_INV)
+        contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+        candidates = []
         for c in contours:
             area = cv2.contourArea(c)
-            if area < 100:
+            if area < 60 or area > 35000:
                 continue
-            peri = cv2.arcLength(c, True)
-            if peri == 0:
+            bx, by, bw, bh = cv2.boundingRect(c)
+            aspect = min(bw, bh) / max(bw, bh)
+            if aspect < 0.55:
                 continue
-            circularity = 4 * np.pi * area / (peri * peri)
-            # Markers are square-ish, circularity ~0.78
-            approx = cv2.approxPolyDP(c, 0.05 * peri, True)
-            
             M = cv2.moments(c)
             if M["m00"] == 0:
                 continue
-            cx = int(M["m10"] / M["m00"]) + x1
-            cy = int(M["m01"] / M["m00"]) + y1
-            
-            # Score based on area and squareness
-            bx, by, bw, bh = cv2.boundingRect(c)
-            aspect = min(bw, bh) / (max(bw, bh) + 1e-5)
-            score = area * aspect
-            
-            if score > best_score:
-                best_score = score
-                best_center = (cx, cy)
-        
-        if best_center is not None:
-            corners.append(best_center)
-            if debug:
-                print(f"    {name}: found at {best_center} (score={best_score:.0f})")
-        else:
-            # Fallback: proportional estimate from spec
-            spec_center = spec["fiducial_markers"][name]["center"]
-            est_x = int(spec_center[0] / canvas_w * w)
-            est_y = int(spec_center[1] / canvas_h * h)
-            corners.append((est_x, est_y))
-            if debug:
-                print(f"    {name}: FALLBACK to ({est_x}, {est_y})")
-    
-    return np.array(corners, dtype="float32")
+            cx = int(M["m10"] / M["m00"])
+            cy = int(M["m01"] / M["m00"])
+            candidates.append((cx, cy, area * aspect))
+
+        if len(candidates) >= 4:
+            all_x = [c[0] for c in candidates]
+            all_y = [c[1] for c in candidates]
+            mid_x = np.median(all_x)
+            mid_y = np.median(all_y)
+
+            tl = [c for c in candidates if c[0] < mid_x and c[1] < mid_y]
+            tr = [c for c in candidates if c[0] >= mid_x and c[1] < mid_y]
+            br = [c for c in candidates if c[0] >= mid_x and c[1] >= mid_y]
+            bl = [c for c in candidates if c[0] < mid_x and c[1] >= mid_y]
+
+            if tl and tr and br and bl:
+                tl_pt = max(tl, key=lambda c: c[2])[:2]
+                tr_pt = max(tr, key=lambda c: c[2])[:2]
+                br_pt = max(br, key=lambda c: c[2])[:2]
+                bl_pt = max(bl, key=lambda c: c[2])[:2]
+                if debug:
+                    print(f"    Dynamic fiducials found: TL={tl_pt}, TR={tr_pt}, BR={br_pt}, BL={bl_pt}")
+                return np.array([tl_pt, tr_pt, br_pt, bl_pt], dtype="float32")
+
+    # Fallback to corner estimates
+    tl_spec = spec.get("fiducial_markers", {}).get("top_left", {}).get("center", (60, 60))
+    tr_spec = spec.get("fiducial_markers", {}).get("top_right", {}).get("center", (1140, 60))
+    br_spec = spec.get("fiducial_markers", {}).get("bottom_right", {}).get("center", (1140, 1540))
+    bl_spec = spec.get("fiducial_markers", {}).get("bottom_left", {}).get("center", (60, 1540))
+
+    return np.array([
+        [int(tl_spec[0] / canvas_w * w), int(tl_spec[1] / canvas_h * h)],
+        [int(tr_spec[0] / canvas_w * w), int(tr_spec[1] / canvas_h * h)],
+        [int(br_spec[0] / canvas_w * w), int(br_spec[1] / canvas_h * h)],
+        [int(bl_spec[0] / canvas_w * w), int(bl_spec[1] / canvas_h * h)]
+    ], dtype="float32")
 
 
 def verify_fiducials(image: np.ndarray, spec: dict, tolerance: int = 15,
@@ -457,45 +446,45 @@ def analyze_bubbles(binary_image: np.ndarray, spec: dict,
             fill_ratios[opt_name] = round(fill_pct, 1)
             option_fills[opt_name] = fill_pct
 
-        # ── Classification Logic ──
-        filled_options = [
-            opt for opt, pct in option_fills.items() if pct >= fill_threshold
-        ]
-        marginal_options = [
-            opt for opt, pct in option_fills.items()
-            if empty_threshold < pct < fill_threshold
-        ]
+        # ── Relative Contrast Classification Logic ──
+        sorted_opts = sorted(option_fills.items(), key=lambda x: x[1], reverse=True)
+        top_opt, top_fill = sorted_opts[0]
+        second_opt, second_fill = sorted_opts[1]
+        fill_gap = top_fill - second_fill
 
-        if len(filled_options) == 1:
-            selected = filled_options[0]
-            status = "ANSWERED"
-            sorted_fills = sorted(option_fills.values(), reverse=True)
-            gap = sorted_fills[0] - sorted_fills[1] if len(sorted_fills) > 1 else 100
-            confidence = min(1.0, gap / 50.0)
+        if top_fill < 28.0:
+            # All bubbles are blank/empty
+            selected = None
+            status = "UNANSWERED"
+            confidence = 1.0
 
-        elif len(filled_options) == 0:
-            if marginal_options:
-                sorted_opts = sorted(option_fills.items(),
-                                     key=lambda x: x[1], reverse=True)
-                top_fill = sorted_opts[0][1]
-                second_fill = sorted_opts[1][1] if len(sorted_opts) > 1 else 0
-                if top_fill > 25 and (top_fill - second_fill) > 12:
-                    selected = sorted_opts[0][0]
-                    status = "ANSWERED_LOW_CONFIDENCE"
-                    confidence = max(0.3, min(0.7, (top_fill - second_fill) / 40.0))
-                else:
-                    selected = None
-                    status = "UNANSWERED"
-                    confidence = 0.8
+        elif top_fill >= fill_threshold:
+            # Top option is strong
+            if second_fill >= fill_threshold and fill_gap < 18.0:
+                # Two bubbles are both heavily marked and close to each other
+                selected = "MULTIPLE"
+                status = "INVALID_MULTIPLE_FILLS"
+                confidence = 0.5
+            else:
+                selected = top_opt
+                status = "ANSWERED"
+                confidence = min(1.0, max(0.6, fill_gap / 45.0))
+
+        elif top_fill >= 28.0:
+            # Faint / light fill
+            if fill_gap >= 12.0:
+                selected = top_opt
+                status = "ANSWERED_LOW_CONFIDENCE"
+                confidence = min(0.75, max(0.35, fill_gap / 30.0))
             else:
                 selected = None
                 status = "UNANSWERED"
-                confidence = 1.0
+                confidence = 0.75
 
-        else:  # 2+ filled
-            selected = "MULTIPLE"
-            status = "INVALID_MULTIPLE_FILLS"
-            confidence = 0.5
+        else:
+            selected = None
+            status = "UNANSWERED"
+            confidence = 1.0
 
         results.append({
             "question": q_num,
