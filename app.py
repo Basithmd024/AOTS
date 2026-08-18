@@ -221,10 +221,19 @@ def scan_omr():
 
     # Run CV OMR Engine
     spec_path = os.path.join(os.path.dirname(__file__), "template_spec.json")
-    omr_output = process_omr_sheet(save_path, spec_path=spec_path, custom_corners=custom_corners, debug=False)
+    omr_output = process_omr_sheet(save_path, spec_path=spec_path, custom_corners=custom_corners, debug=True)
 
     if omr_output.get("status") != "SUCCESS":
         return jsonify({"success": False, "error": omr_output.get("error", "OMR detection failed.")}), 400
+
+    # Retrieve debug aligned image for frontend DocScanner preview
+    enhanced_b64 = None
+    base_name = os.path.splitext(filename)[0]
+    debug_aligned = os.path.join(app.config["UPLOAD_FOLDER"], "debug", f"{base_name}_aligned.png")
+    if os.path.exists(debug_aligned):
+        import base64
+        with open(debug_aligned, "rb") as img_f:
+            enhanced_b64 = f"data:image/png;base64,{base64.b64encode(img_f.read()).decode('utf-8')}"
 
     # Evaluate score and persist in DB
     try:
@@ -237,6 +246,7 @@ def scan_omr():
         return jsonify({
             "success": True,
             "report": report,
+            "enhanced_image": enhanced_b64,
             "student_view": generate_student_view(report)
         })
     except Exception as e:

@@ -804,6 +804,32 @@ document.addEventListener('DOMContentLoaded', () => {
     await submitScan(capturedBlob, normalizedCorners);
   }
 
+  // ── State 4: Enhanced Document Preview DOM ──
+  const enhancedPreviewWrap = document.getElementById('enhanced-preview-wrap');
+  const enhancedDocImg = document.getElementById('enhanced-doc-img');
+  const btnPreviewRetake = document.getElementById('btn-preview-retake');
+  const btnPreviewAdjust = document.getElementById('btn-preview-adjust');
+  const btnPreviewConfirm = document.getElementById('btn-preview-confirm');
+  let currentScanReport = null;
+
+  btnPreviewRetake.addEventListener('click', () => {
+    enhancedPreviewWrap.style.display = 'none';
+    viewfinderWrapper.style.display = 'block';
+    docShutterDeck.style.display = 'block';
+    resumeScanner();
+  });
+
+  btnPreviewAdjust.addEventListener('click', () => {
+    enhancedPreviewWrap.style.display = 'none';
+    cornerEditorWrap.style.display = 'block';
+  });
+
+  btnPreviewConfirm.addEventListener('click', () => {
+    enhancedPreviewWrap.style.display = 'none';
+    scannerLiveContainer.style.display = 'none';
+    scorecardPanel.style.display = 'block';
+  });
+
   // ───────────────────────────────────────────────────────────────────────────
   // Step 4: Submission & Evaluation
   // ───────────────────────────────────────────────────────────────────────────
@@ -842,8 +868,20 @@ document.addEventListener('DOMContentLoaded', () => {
         throw new Error(data.error || 'Evaluation failed.');
       }
 
-      scannerLiveContainer.style.display = 'none';
-      scorecardPanel.style.display = 'block';
+      currentScanReport = data.report;
+
+      // If enhanced image returned, show State 4 preview
+      if (data.enhanced_image) {
+        enhancedDocImg.src = data.enhanced_image;
+        viewfinderWrapper.style.display = 'none';
+        cornerEditorWrap.style.display = 'none';
+        docShutterDeck.style.display = 'none';
+        enhancedPreviewWrap.style.display = 'block';
+      } else {
+        scannerLiveContainer.style.display = 'none';
+        scorecardPanel.style.display = 'block';
+      }
+
       renderScorecard(data.report, elapsedMs);
       showToast(`Sheet Evaluated in ${elapsedMs}ms!`, 'success');
     } catch (err) {

@@ -655,6 +655,97 @@ body {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
+   STATE 4: ENHANCED DOCUMENT PREVIEW (Screenshot 2 View)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.enhanced-preview-wrap {
+  background: #000;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--panel-border);
+  margin-bottom: 1rem;
+}
+
+.enhanced-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #111827;
+  padding: 0.6rem 0.85rem;
+  border-bottom: 1px solid var(--panel-border);
+}
+
+.enhanced-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.enhanced-img-container {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  background: #1e293b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 0.5rem;
+}
+
+#enhanced-doc-img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 4px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.8);
+}
+
+.page-counter-badge {
+  position: absolute;
+  bottom: 0.75rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.75);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.enhanced-bottom-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #111827;
+  padding: 0.75rem;
+  border-top: 1px solid var(--panel-border);
+}
+
+.doc-btn-success {
+  flex: 1;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #fff;
+  border: none;
+  font-weight: 700;
+  font-size: 0.85rem;
+  padding: 0.65rem 0.85rem;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+}
+
+.doc-btn-success:active {
+  transform: scale(0.98);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
    DOCSCANNER BOTTOM SHUTTER DECK
    ═══════════════════════════════════════════════════════════════════════════ */
 
