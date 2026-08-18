@@ -1,11 +1,12 @@
 /**
- * AOTS — DocScanner Engine & Client Architecture (v3.0)
+ * AOTS — DocScanner Engine & Client Architecture (v3.2)
  * =====================================================
- * Native Mobile Document Scanner Implementation:
- * - Real-Time Cyan HUD Targeting & Live Frame Contour Tracker
- * - Automatic Paper Boundary Snapping (Otsu + Canny Convex Quad)
- * - Interactive 4-Corner Draggable Crop Editor with 2X Magnifying Loupe
- * - Homography Perspective Transform & Shadow Normalization
+ * Implements the 4-State Document Scanning Lifecycle:
+ *   1. Setup & Exam Configuration (No aggressive camera popups)
+ *   2. State 1: Searching (Blue corner brackets)
+ *   3. State 2: Found It (4 Cyan corner dots & boundary)
+ *   4. State 3: Locking & Stability ("Capturing... don't move")
+ *   5. State 4: Perspective Flattening, Shadow Removal & Instant 50-Q Evaluation
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -15,13 +16,13 @@ document.addEventListener('DOMContentLoaded', () => {
   let isAnalyzing = false;
   let autoCaptureEnabled = true;
   let isCapturing = false;
-  let scannedCount = 1;
+  let selectedMode = 'camera'; // 'camera' or 'upload'
 
-  // Quad Stabilization History
+  // Stability Tracking Buffer
   const quadHistory = [];
   const STABILITY_REQUIRED_FRAMES = 5;
-  const MAX_CORNER_DRIFT_PX = 10.0;
-  const MAX_AREA_DELTA_PCT = 4.0;
+  const MAX_CORNER_DRIFT_PX = 8.0;
+  const MAX_AREA_DELTA_PCT = 3.5;
 
   // Corner Editor State
   let editorImage = null;
@@ -39,16 +40,35 @@ document.addEventListener('DOMContentLoaded', () => {
   // ── DOM References ──
   const tabBtns = document.querySelectorAll('.tab-btn');
   const tabPanes = document.querySelectorAll('.tab-pane');
+  
+  // Step 1 Setup Card
+  const scannerSetupCard = document.getElementById('scanner-setup-card');
+  const selectExam = document.getElementById('select-exam');
+  const inputStudentId = document.getElementById('input-student-id');
+  const cardModeCamera = document.getElementById('card-mode-camera');
+  const cardModeUpload = document.getElementById('card-mode-upload');
+  const btnLaunchScanner = document.getElementById('btn-launch-scanner');
+  const btnLoadSample = document.getElementById('btn-load-sample');
+
+  // Step 2 Live Scanner
+  const scannerLiveContainer = document.getElementById('scanner-live-container');
+  const bannerExamCode = document.getElementById('banner-exam-code');
+  const bannerStudentId = document.getElementById('banner-student-id');
+  const btnChangeExam = document.getElementById('btn-change-exam');
+  const btnTopBack = document.getElementById('btn-top-back');
   const videoStream = document.getElementById('camera-stream');
   const analysisCanvas = document.getElementById('analysis-canvas');
   const snapshotCanvas = document.getElementById('snapshot-canvas');
   const overlayCanvas = document.getElementById('hud-contour-canvas');
+  const searchingBracketsHud = document.getElementById('searching-brackets-hud');
   const floatingStatusPill = document.getElementById('floating-status-pill');
   const floatingStatusText = document.getElementById('floating-status-text');
+  const pillSpinner = document.getElementById('pill-spinner');
+  const pillPulseDot = document.getElementById('pill-pulse-dot');
   const shutterFlash = document.getElementById('shutter-flash');
   const btnGridToggle = document.getElementById('btn-grid-toggle');
   const gridOverlay = document.getElementById('camera-grid-overlay');
-  const btnSwitchSource = document.getElementById('btn-switch-source');
+  const btnManualToggle = document.getElementById('btn-manual-toggle');
   const autoModeLabel = document.getElementById('auto-mode-label');
   const viewfinderWrapper = document.getElementById('viewfinder-wrapper');
   const fileDropzone = document.getElementById('file-dropzone');
@@ -56,13 +76,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const filePreviewWrap = document.getElementById('file-preview-wrap');
   const filePreviewImg = document.getElementById('file-preview-img');
   const btnManualCapture = document.getElementById('btn-manual-capture');
-  const btnSampleDemo = document.getElementById('btn-sample-demo');
-  const btnFinishCheck = document.getElementById('btn-finish-check');
-  const btnScanNext = document.getElementById('btn-scan-next');
+  const btnCloseScanner = document.getElementById('btn-close-scanner');
   const docShutterDeck = document.getElementById('doc-shutter-deck');
-  const scannedCountBadge = document.getElementById('scanned-count-badge');
 
-  // Corner Editor DOM
+  // Step 3 Corner Editor
   const cornerEditorWrap = document.getElementById('corner-editor-wrap');
   const editorCanvas = document.getElementById('crop-editor-canvas');
   const editorContainer = document.getElementById('editor-canvas-container');
@@ -79,8 +96,10 @@ document.addEventListener('DOMContentLoaded', () => {
     bl: document.getElementById('handle-bl')
   };
 
-  const scorecardEmpty = document.getElementById('scorecard-empty');
+  // Step 4 Scorecard
+  const scorecardPanel = document.getElementById('scorecard-panel');
   const scorecardResult = document.getElementById('scorecard-result');
+  const btnScanNext = document.getElementById('btn-scan-next');
 
   // ───────────────────────────────────────────────────────────────────────────
   // Audio & Haptic Chime
@@ -119,18 +138,81 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ───────────────────────────────────────────────────────────────────────────
-  // Grid Lines & Auto Toggle
+  // Step 1: Mode Selection & Setup Controls
   // ───────────────────────────────────────────────────────────────────────────
+  cardModeCamera.addEventListener('click', () => {
+    selectedMode = 'camera';
+    cardModeCamera.classList.add('active');
+    cardModeUpload.classList.remove('active');
+  });
+
+  cardModeUpload.addEventListener('click', () => {
+    selectedMode = 'upload';
+    cardModeUpload.classList.add('active');
+    cardModeCamera.classList.remove('active');
+  });
+
+  btnLaunchScanner.addEventListener('click', () => {
+    startScanningSession();
+  });
+
+  btnChangeExam.addEventListener('click', () => {
+    stopScanningSession();
+  });
+
+  btnTopBack.addEventListener('click', () => {
+    stopScanningSession();
+  });
+
+  btnCloseScanner.addEventListener('click', () => {
+    stopScanningSession();
+  });
+
+  function startScanningSession() {
+    activeExamCode = selectExam.value;
+    const studentId = inputStudentId.value.trim() || 'SM-ECET-2026-042';
+
+    bannerExamCode.textContent = activeExamCode;
+    bannerStudentId.textContent = studentId;
+    document.getElementById('doc-subtitle').textContent = `${activeExamCode} • ${studentId}`;
+
+    scannerSetupCard.style.display = 'none';
+    scorecardPanel.style.display = 'none';
+    scannerLiveContainer.style.display = 'block';
+
+    if (selectedMode === 'camera') {
+      viewfinderWrapper.style.display = 'block';
+      fileDropzone.style.display = 'none';
+      docShutterDeck.style.display = 'block';
+      initCamera();
+    } else {
+      stopCamera();
+      viewfinderWrapper.style.display = 'none';
+      fileDropzone.style.display = 'flex';
+      docShutterDeck.style.display = 'block';
+    }
+  }
+
+  function stopScanningSession() {
+    stopCamera();
+    clearInterval(editorTimer);
+    scannerLiveContainer.style.display = 'none';
+    cornerEditorWrap.style.display = 'none';
+    scorecardPanel.style.display = 'none';
+    scannerSetupCard.style.display = 'block';
+    document.getElementById('doc-subtitle').textContent = 'Ready to Scan';
+  }
+
   btnGridToggle.addEventListener('click', () => {
     const isVisible = gridOverlay.style.display !== 'none';
     gridOverlay.style.display = isVisible ? 'none' : 'block';
     btnGridToggle.classList.toggle('active', !isVisible);
   });
 
-  btnSwitchSource.addEventListener('click', () => {
+  btnManualToggle.addEventListener('click', () => {
     autoCaptureEnabled = !autoCaptureEnabled;
     autoModeLabel.textContent = autoCaptureEnabled ? 'AUTO' : 'MANUAL';
-    showToast(`Capture Mode: ${autoCaptureEnabled ? 'Automatic (DocScanner)' : 'Manual Tap'}`, 'info');
+    showToast(`Capture Mode: ${autoCaptureEnabled ? 'Automatic (CamScanner)' : 'Manual Shutter'}`, 'info');
   });
 
   // ───────────────────────────────────────────────────────────────────────────
@@ -147,7 +229,7 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById(`tab-${tabId}`).classList.add('active');
 
       if (tabId === 'scanner') {
-        if (viewfinderWrapper.style.display !== 'none' && cornerEditorWrap.style.display === 'none') {
+        if (scannerLiveContainer.style.display !== 'none' && selectedMode === 'camera') {
           initCamera();
         }
       } else {
@@ -183,8 +265,9 @@ document.addEventListener('DOMContentLoaded', () => {
       };
     } catch (err) {
       console.warn('Camera stream error:', err);
-      switchToUploadMode();
-      showToast('Camera access unavailable. Switched to File Upload mode.', 'warning');
+      selectedMode = 'upload';
+      startScanningSession();
+      showToast('Camera unavailable. Switched to File Upload mode.', 'warning');
     }
   }
 
@@ -197,7 +280,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ───────────────────────────────────────────────────────────────────────────
-  // Real-Time DocScanner Cyan Frame Contour Tracking
+  // Real-Time Frame Detection & 4-State Lifecycle
   // ───────────────────────────────────────────────────────────────────────────
   function processDetectionFrame() {
     if (!isAnalyzing || !videoStream.videoWidth || isCapturing) {
@@ -224,7 +307,7 @@ document.addEventListener('DOMContentLoaded', () => {
       gray[i / 4] = pixels[i] * 0.299 + pixels[i + 1] * 0.587 + pixels[i + 2] * 0.114;
     }
 
-    // Gaussian smoothing
+    // 3x3 Gaussian smoothing
     const blurred = new Float32Array(procW * procH);
     for (let y = 1; y < procH - 1; y++) {
       for (let x = 1; x < procW - 1; x++) {
@@ -236,7 +319,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    // Sobel gradients
+    // Sobel edge gradients
     const edgePoints = [];
     const minGradientThreshold = 30.0;
 
@@ -299,9 +382,12 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    drawLiveHUDOverlay(detectedQuad);
-
+    // ── STATE 1 vs STATE 2 & 3 DISPATCH ──
     if (detectedQuad) {
+      // STATE 2: Document Found (Show Cyan Dots & Polygon)
+      searchingBracketsHud.style.display = 'none';
+      drawCyanHUDOverlay(detectedQuad);
+
       quadHistory.push(detectedQuad);
       if (quadHistory.length > STABILITY_REQUIRED_FRAMES) quadHistory.shift();
 
@@ -322,15 +408,25 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       if (isStabilized && autoCaptureEnabled && !isCapturing) {
-        floatingStatusText.textContent = 'Document Locked (100%)';
+        // STATE 3: Locking & Stability Confirmed
+        pillSpinner.style.display = 'block';
+        pillPulseDot.style.display = 'none';
+        floatingStatusText.textContent = "Capturing... don't move";
         openCornerAdjustmentModal(detectedQuad);
         return;
       } else {
+        pillSpinner.style.display = 'none';
+        pillPulseDot.style.display = 'block';
         floatingStatusText.textContent = 'Document Found — Hold Steady';
       }
     } else {
+      // STATE 1: Searching for Sheet
       if (quadHistory.length > 0) quadHistory.pop();
-      floatingStatusText.textContent = 'Finding document...';
+      searchingBracketsHud.style.display = 'block';
+      clearOverlayCanvas();
+      pillSpinner.style.display = 'none';
+      pillPulseDot.style.display = 'block';
+      floatingStatusText.textContent = 'Searching for OMR sheet...';
     }
 
     if (isAnalyzing) {
@@ -338,8 +434,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Draw DocScanner Cyan Targeting Dots & Glowing Polygon
-  function drawLiveHUDOverlay(quad) {
+  function clearOverlayCanvas() {
+    if (!overlayCanvas) return;
+    const ctx = overlayCanvas.getContext('2d');
+    ctx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+  }
+
+  // Draw DocScanner 4 Cyan Corner Dots & Glowing Quadrilateral
+  function drawCyanHUDOverlay(quad) {
     if (!overlayCanvas) return;
     const rect = viewfinderWrapper.getBoundingClientRect();
     overlayCanvas.width = rect.width;
@@ -352,7 +454,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const scaleX = rect.width / videoStream.videoWidth;
       const scaleY = rect.height / videoStream.videoHeight;
 
-      // Draw Polygon Boundary
+      // Cyan boundary polygon
       ctx.beginPath();
       ctx.moveTo(quad.tl.x * scaleX, quad.tl.y * scaleY);
       ctx.lineTo(quad.tr.x * scaleX, quad.tr.y * scaleY);
@@ -366,7 +468,7 @@ document.addEventListener('DOMContentLoaded', () => {
       ctx.stroke();
       ctx.fill();
 
-      // 4 Vibrant Cyan Circular Corner Targets (DocScanner style)
+      // 4 Cyan Corner Dots (Exact Match with Image 2)
       [quad.tl, quad.tr, quad.br, quad.bl].forEach(pt => {
         const cx = pt.x * scaleX;
         const cy = pt.y * scaleY;
@@ -377,13 +479,13 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.fillStyle = 'rgba(0, 240, 208, 0.25)';
         ctx.fill();
 
-        // Inner solid cyan circle
+        // Solid cyan inner circle
         ctx.beginPath();
         ctx.arc(cx, cy, 8, 0, Math.PI * 2);
         ctx.fillStyle = '#00f0d0';
         ctx.fill();
 
-        // White center dot
+        // Center white dot
         ctx.beginPath();
         ctx.arc(cx, cy, 3, 0, Math.PI * 2);
         ctx.fillStyle = '#ffffff';
@@ -393,13 +495,13 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ───────────────────────────────────────────────────────────────────────────
-  // Precision 4-Corner Crop Editor with Magnifying Loupe
+  // Step 3: Interactive 4-Corner Draggable Crop Adjuster
   // ───────────────────────────────────────────────────────────────────────────
   async function openCornerAdjustmentModal(detectedQuad = null) {
     isCapturing = true;
     isAnalyzing = false;
 
-    // Visual Flash & Audio Chime
+    // Flash & chime
     shutterFlash.classList.add('flash');
     playCaptureChime();
     setTimeout(() => shutterFlash.classList.remove('flash'), 300);
@@ -423,7 +525,6 @@ document.addEventListener('DOMContentLoaded', () => {
     editorImage.src = URL.createObjectURL(capturedBlob);
   }
 
-  // Automatic High-Precision Paper Edge Snapper
   function setupCornerEditor(detectedQuad) {
     const containerRect = editorContainer.getBoundingClientRect();
     editorCanvas.width = containerRect.width;
@@ -435,8 +536,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const scaleY = containerRect.height / imgH;
 
     let snappedCorners = null;
-
-    // Run High-Res Contour Extractor on Captured Snapshot Canvas
     if (!detectedQuad) {
       snappedCorners = extractHighResPaperContour(editorImage, imgW, imgH);
     }
@@ -452,7 +551,6 @@ document.addEventListener('DOMContentLoaded', () => {
       editorCorners.br = { x: snappedCorners.br.x * scaleX, y: snappedCorners.br.y * scaleY };
       editorCorners.bl = { x: snappedCorners.bl.x * scaleX, y: snappedCorners.bl.y * scaleY };
     } else {
-      // Clean fallback
       editorCorners.tl = { x: containerRect.width * 0.15, y: containerRect.height * 0.15 };
       editorCorners.tr = { x: containerRect.width * 0.85, y: containerRect.height * 0.15 };
       editorCorners.br = { x: containerRect.width * 0.85, y: containerRect.height * 0.85 };
@@ -462,7 +560,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateHandleDOMPositions();
     renderEditorCanvas();
 
-    // Start 10-Second Auto-Countdown
+    // 10-Second Auto Countdown
     clearInterval(editorTimer);
     editorSecondsLeft = 10;
     updateTimerBadge();
@@ -477,7 +575,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 1000);
   }
 
-  // Extract paper boundary using luminance Otsu threshold
   function extractHighResPaperContour(img, w, h) {
     try {
       const offCanvas = document.createElement('canvas');
@@ -563,10 +660,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const ctx = editorCanvas.getContext('2d');
     ctx.clearRect(0, 0, editorCanvas.width, editorCanvas.height);
 
-    // Captured image
     ctx.drawImage(editorImage, 0, 0, editorCanvas.width, editorCanvas.height);
 
-    // Cyan glowing boundary polygon
     ctx.beginPath();
     ctx.moveTo(editorCorners.tl.x, editorCorners.tl.y);
     ctx.lineTo(editorCorners.tr.x, editorCorners.tr.y);
@@ -580,7 +675,6 @@ document.addEventListener('DOMContentLoaded', () => {
     ctx.stroke();
     ctx.fill();
 
-    // Cyan cross alignment lines
     ctx.strokeStyle = 'rgba(0, 240, 208, 0.4)';
     ctx.lineWidth = 1;
     ctx.beginPath();
@@ -600,7 +694,7 @@ document.addEventListener('DOMContentLoaded', () => {
     ctx.stroke();
   }
 
-  // ── Drag & Magnifying Loupe Handlers ──
+  // ── Drag & 2X Loupe Handlers ──
   Object.keys(handles).forEach(cornerKey => {
     const handle = handles[cornerKey];
 
@@ -648,7 +742,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const lCtx = loupeCanvas.getContext('2d');
     lCtx.clearRect(0, 0, 120, 120);
 
-    // Render 2x zoomed patch from editorImage
     const scaleX = editorImage.width / editorCanvas.width;
     const scaleY = editorImage.height / editorCanvas.height;
 
@@ -674,7 +767,6 @@ document.addEventListener('DOMContentLoaded', () => {
   window.addEventListener('mouseup', stopDrag);
   window.addEventListener('touchend', stopDrag);
 
-  // Editor Actions
   btnEditorRetake.addEventListener('click', () => {
     clearInterval(editorTimer);
     cornerEditorWrap.style.display = 'none';
@@ -714,14 +806,11 @@ document.addEventListener('DOMContentLoaded', () => {
     ];
 
     cornerEditorWrap.style.display = 'none';
-    viewfinderWrapper.style.display = 'block';
-    docShutterDeck.style.display = 'block';
-
     await submitScan(capturedBlob, normalizedCorners);
   }
 
   // ───────────────────────────────────────────────────────────────────────────
-  // Shutter Button & Scan Submission
+  // Step 4: Submission & Evaluation
   // ───────────────────────────────────────────────────────────────────────────
   btnManualCapture.addEventListener('click', () => {
     if (viewfinderWrapper.style.display !== 'none' && videoStream.videoWidth > 0) {
@@ -733,19 +822,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  btnFinishCheck.addEventListener('click', () => {
-    const el = document.getElementById('tab-scanner');
-    el.scrollIntoView({ behavior: 'smooth', block: 'end' });
-    showToast('Viewing scorecard results.', 'info');
-  });
-
   async function submitScan(blobToSend, customCorners = null) {
     floatingStatusText.textContent = 'Grading 50 Questions...';
 
     const formData = new FormData();
     formData.append('file', blobToSend, 'sheet_scan.png');
-    formData.append('test_code', document.getElementById('select-exam').value);
-    formData.append('student_id', document.getElementById('input-student-id').value);
+    formData.append('test_code', activeExamCode);
+    formData.append('student_id', inputStudentId.value.trim() || 'SM-ECET-2026-042');
 
     if (customCorners) {
       formData.append('corners', JSON.stringify(customCorners));
@@ -764,12 +847,10 @@ document.addEventListener('DOMContentLoaded', () => {
         throw new Error(data.error || 'Evaluation failed.');
       }
 
-      scannedCount++;
-      scannedCountBadge.textContent = scannedCount;
-
+      scannerLiveContainer.style.display = 'none';
+      scorecardPanel.style.display = 'block';
       renderScorecard(data.report, elapsedMs);
       showToast(`Sheet Evaluated in ${elapsedMs}ms!`, 'success');
-      btnScanNext.style.display = 'inline-flex';
     } catch (err) {
       showToast('Scan Error: ' + err.message, 'danger');
       floatingStatusText.textContent = 'Scan Failed — Try Again';
@@ -778,9 +859,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function renderScorecard(report, elapsedMs) {
-    scorecardEmpty.style.display = 'none';
-    scorecardResult.style.display = 'block';
-
     const sum = report.summary;
     document.getElementById('res-score-val').textContent = sum.raw_score.toFixed(1);
     document.getElementById('res-max-val').textContent = `/ ${sum.max_marks.toFixed(1)}`;
@@ -794,9 +872,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('cnt-blank').textContent = sum.unanswered;
     document.getElementById('cnt-multi').textContent = sum.multiple_marks;
 
-    floatingStatusText.textContent = `Score: ${sum.raw_score}/${sum.max_marks}`;
-
-    // Render 50-Question Response Grid
     const responseGrid = document.getElementById('response-grid');
     responseGrid.innerHTML = '';
 
@@ -828,25 +903,14 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   btnScanNext.addEventListener('click', () => {
-    btnScanNext.style.display = 'none';
-    scorecardResult.style.display = 'none';
-    scorecardEmpty.style.display = 'block';
-    floatingStatusText.textContent = 'Finding document...';
+    scorecardPanel.style.display = 'none';
+    startScanningSession();
     resumeScanner();
-    showToast('Ready for next sheet.', 'info');
   });
 
   // ───────────────────────────────────────────────────────────────────────────
   // File Upload & Sample Demo
   // ───────────────────────────────────────────────────────────────────────────
-  function switchToUploadMode() {
-    stopCamera();
-    clearInterval(editorTimer);
-    cornerEditorWrap.style.display = 'none';
-    viewfinderWrapper.style.display = 'none';
-    fileDropzone.style.display = 'flex';
-  }
-
   fileInput.addEventListener('change', (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -861,23 +925,24 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  btnSampleDemo.addEventListener('click', async () => {
-    showToast('Loading pre-filled test sample...', 'info');
+  btnLoadSample.addEventListener('click', async () => {
+    showToast('Loading sample sheet...', 'info');
     try {
       const resp = await fetch('/static/test_sample.png');
       const blob = await resp.blob();
       currentUploadedBlob = new File([blob], 'sample_sheet.png', { type: 'image/png' });
+      selectedMode = 'upload';
+      startScanningSession();
       filePreviewImg.src = URL.createObjectURL(blob);
       filePreviewWrap.style.display = 'block';
-      switchToUploadMode();
-      showToast('Sample Loaded. Click Shutter Button to evaluate.', 'success');
+      showToast('Sample Loaded. Click Shutter Button to grade.', 'success');
     } catch (e) {
       showToast('Error loading sample: ' + e.message, 'danger');
     }
   });
 
   // ───────────────────────────────────────────────────────────────────────────
-  // Teacher Portal Answer Key Builder
+  // Teacher Portal & Analytics
   // ───────────────────────────────────────────────────────────────────────────
   function initAnswerKeyBuilder() {
     const grid = document.getElementById('key-picker-grid');
@@ -920,22 +985,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('btn-key-preset-1').addEventListener('click', () => {
     const options = ['A', 'B', 'C', 'D'];
-    for (let q = 1; q <= 50; q++) {
-      setKeyOption(q, options[(q - 1) % 4]);
-    }
+    for (let q = 1; q <= 50; q++) setKeyOption(q, options[(q - 1) % 4]);
   });
 
   document.getElementById('btn-key-random').addEventListener('click', () => {
     const options = ['A', 'B', 'C', 'D'];
-    for (let q = 1; q <= 50; q++) {
-      setKeyOption(q, options[Math.floor(Math.random() * options.length)]);
-    }
+    for (let q = 1; q <= 50; q++) setKeyOption(q, options[Math.floor(Math.random() * options.length)]);
   });
 
   document.getElementById('btn-key-clear').addEventListener('click', () => {
-    for (let q = 1; q <= 50; q++) {
-      setKeyOption(q, 'A');
-    }
+    for (let q = 1; q <= 50; q++) setKeyOption(q, 'A');
   });
 
   function setKeyOption(q, opt) {
@@ -1024,14 +1083,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // ───────────────────────────────────────────────────────────────────────────
-  // Class Analytics & Item Heatmap
-  // ───────────────────────────────────────────────────────────────────────────
-  document.getElementById('analytics-exam-select').addEventListener('change', (e) => {
-    loadAnalytics(e.target.value);
-    document.getElementById('btn-export-csv').href = `/api/export/${e.target.value}.csv`;
-  });
-
   async function loadAnalytics(testCode) {
     try {
       const resp = await fetch(`/api/analytics/${testCode}`);
@@ -1039,7 +1090,6 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!data.success) return;
 
       const an = data.analytics;
-
       const toppersContainer = document.getElementById('toppers-container');
       toppersContainer.innerHTML = '';
       if (an.toppers && an.toppers.length > 0) {
@@ -1058,8 +1108,6 @@ document.addEventListener('DOMContentLoaded', () => {
           `;
           toppersContainer.appendChild(div);
         });
-      } else {
-        toppersContainer.innerHTML = '<p class="empty-msg">No submissions recorded yet for this exam.</p>';
       }
 
       const flaggedContainer = document.getElementById('flagged-questions-container');
@@ -1077,8 +1125,6 @@ document.addEventListener('DOMContentLoaded', () => {
           `;
           flaggedContainer.appendChild(div);
         });
-      } else {
-        flaggedContainer.innerHTML = '<p class="success-msg">🎉 All questions are within acceptable difficulty (&lt;60% fail rate).</p>';
       }
 
       const itemMatrix = document.getElementById('full-item-matrix');
@@ -1109,7 +1155,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 3000);
   }
 
-  // Start Scanner
-  initCamera();
+  // Load Initial Exam List (Camera stays off until user launches!)
   loadActiveTests();
 });

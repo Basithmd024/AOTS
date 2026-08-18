@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>AOTS — Document Scanner & OMR Assessment Engine</title>
+  <title>AOTS — Document Scanner & OMR Assessment Platform</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
@@ -13,16 +13,16 @@
   <div class="app-layout">
     
     <!-- ═══════════════════════════════════════════════════════════════════════
-         DOCSCANNER NATIVE TOP BAR
+         DOCSCANNER TOP NAVIGATION BAR
          ═══════════════════════════════════════════════════════════════════════ -->
     <header class="doc-top-bar">
       <div class="top-bar-left">
-        <button id="btn-top-back" class="icon-btn" title="Back">
+        <button id="btn-top-back" class="icon-btn" title="Back to Setup">
           <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
         </button>
         <div class="doc-title-box">
           <span class="doc-brand">AOTS DocScanner</span>
-          <span id="doc-subtitle" class="doc-subtitle">ECET-003 Grand Assessment</span>
+          <span id="doc-subtitle" class="doc-subtitle">Ready to Scan</span>
         </div>
       </div>
 
@@ -34,9 +34,6 @@
         <button id="btn-grid-toggle" class="icon-btn" title="Grid alignment lines">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
         </button>
-        <button id="btn-portal-switch" class="icon-btn" title="Teacher Portal & Analytics">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-        </button>
       </div>
     </header>
 
@@ -44,7 +41,7 @@
     <nav class="app-tabs">
       <button class="tab-btn active" data-tab="scanner">
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-        <span>Doc Scanner</span>
+        <span>Scanner</span>
       </button>
       <button class="tab-btn" data-tab="teacher">
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
@@ -52,31 +49,71 @@
       </button>
       <button class="tab-btn" data-tab="analytics">
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-        <span>Analytics</span>
+        <span>Class Analytics</span>
       </button>
     </nav>
 
     <main class="app-main">
       <!-- ═════════════════════════════════════════════════════════════════════
-           TAB 1: LIVE DOCSCANNER & EVALUATION
+           TAB 1: ASSESSMENT SCANNER WORKFLOW
            ═════════════════════════════════════════════════════════════════════ -->
       <section id="tab-scanner" class="tab-pane active">
         
-        <!-- Live Camera Viewfinder & DocScanner HUD -->
-        <div class="scanner-viewfinder-container">
-          
-          <!-- Config Bar -->
-          <div class="exam-selector-strip">
-            <div class="exam-field">
-              <label>Exam:</label>
-              <select id="select-exam" class="compact-select">
-                <option value="AOTS-ECET-003">AOTS-ECET-003 — Grand Mock 01 (50 Qs)</option>
+        <!-- ── STEP 1: EXAM & STUDENT SELECTION (Setup Screen) ── -->
+        <div id="scanner-setup-card" class="panel setup-card">
+          <div class="setup-header">
+            <div class="setup-icon-badge">📋</div>
+            <div>
+              <h2 class="setup-title">Assessment Setup</h2>
+              <p class="setup-sub">Select the test paper and student roll number before scanning.</p>
+            </div>
+          </div>
+
+          <div class="setup-form">
+            <div class="form-group">
+              <label for="select-exam">Select Test Paper / Exam Code</label>
+              <select id="select-exam" class="select-input">
+                <option value="AOTS-ECET-003">AOTS-ECET-003 — ECET Grand Mock 01 (50 Questions)</option>
               </select>
             </div>
-            <div class="exam-field">
-              <label>Student:</label>
-              <input type="text" id="input-student-id" class="compact-input" value="SM-ECET-2026-042">
+
+            <div class="form-group">
+              <label for="input-student-id">Student ID / Roll Number</label>
+              <input type="text" id="input-student-id" class="text-input" value="SM-ECET-2026-042" placeholder="e.g. ECET-042">
             </div>
+
+            <div class="scan-mode-cards">
+              <div class="mode-card active" id="card-mode-camera">
+                <div class="card-icon">📸</div>
+                <div class="card-title">DocScanner Live Camera</div>
+                <div class="card-desc">Auto-locks corners & captures sheet hands-free</div>
+              </div>
+              <div class="mode-card" id="card-mode-upload">
+                <div class="card-icon">📁</div>
+                <div class="card-title">File / Gallery Upload</div>
+                <div class="card-desc">Upload a photo from your phone or sample sheet</div>
+              </div>
+            </div>
+
+            <div class="setup-actions">
+              <button type="button" id="btn-launch-scanner" class="btn btn-primary btn-block">
+                🚀 Launch Document Scanner
+              </button>
+              <button type="button" id="btn-load-sample" class="btn btn-secondary btn-block">
+                ⚡ Load Prefilled Test Sample
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── STEP 2: LIVE DOCSCANNER VIEWFINDER (4 States) ── -->
+        <div id="scanner-live-container" class="scanner-viewfinder-container" style="display: none;">
+          
+          <!-- Active Exam Info Banner -->
+          <div class="exam-info-banner">
+            <span id="banner-exam-code">AOTS-ECET-003</span> • 
+            <span id="banner-student-id">SM-ECET-2026-042</span>
+            <button id="btn-change-exam" class="btn-xs">✏️ Change</button>
           </div>
 
           <!-- Camera Stream Box -->
@@ -91,14 +128,26 @@
               <div class="grid-line v-2"></div>
             </div>
 
-            <!-- DocScanner Real-Time Cyan HUD Targeting Overlay -->
+            <!-- State 1: Blue Searching Brackets HUD -->
+            <div id="searching-brackets-hud" class="searching-brackets-hud">
+              <div class="search-corner tl"></div>
+              <div class="search-corner tr"></div>
+              <div class="search-corner br"></div>
+              <div class="search-corner bl"></div>
+              <div class="search-center-target">
+                <div class="target-ring"></div>
+              </div>
+            </div>
+
+            <!-- State 2 & 3: Cyan Targeting Contour & Stability Canvas Overlay -->
             <div class="doc-hud-overlay" id="hud-overlay">
               <canvas id="hud-contour-canvas"></canvas>
 
-              <!-- Floating Bottom Status Pill -->
+              <!-- Floating Bottom Status Pill with Stability Spinner -->
               <div class="floating-status-pill" id="floating-status-pill">
-                <div class="pulse-dot"></div>
-                <span id="floating-status-text">Finding document...</span>
+                <div id="pill-spinner" class="pill-spinner" style="display: none;"></div>
+                <div id="pill-pulse-dot" class="pulse-dot"></div>
+                <span id="floating-status-text">Searching for OMR sheet...</span>
               </div>
             </div>
 
@@ -110,7 +159,7 @@
             <canvas id="snapshot-canvas" style="display: none;"></canvas>
           </div>
 
-          <!-- File Upload Dropzone (Fallback Mode) -->
+          <!-- File Upload Dropzone (Upload Mode) -->
           <div id="file-dropzone" class="file-dropzone" style="display: none;">
             <input type="file" id="file-input" accept="image/*" class="file-input-hidden">
             <div class="dropzone-body">
@@ -123,9 +172,7 @@
             </div>
           </div>
 
-          <!-- ═════════════════════════════════════════════════════════════════
-               INTERACTIVE 4-CORNER CROP & EDGE ADJUSTER (DocScanner Mode)
-               ═════════════════════════════════════════════════════════════════ -->
+          <!-- ── STEP 3: INTERACTIVE 4-CORNER CROP ADJUSTER (CamScanner Mode) ── -->
           <div id="corner-editor-wrap" class="corner-editor-wrap" style="display: none;">
             <div class="editor-top-nav">
               <span id="editor-timer-badge" class="doc-badge">⏳ Auto-Grading in 10s</span>
@@ -144,7 +191,7 @@
               <div class="cyan-drag-handle" id="handle-br" data-corner="br"></div>
               <div class="cyan-drag-handle" id="handle-bl" data-corner="bl"></div>
 
-              <!-- Magnifying Loupe / 2X Zoom Lens -->
+              <!-- 2X Magnifying Loupe / Zoom Lens -->
               <div id="magnifying-loupe" class="magnifying-loupe" style="display: none;">
                 <canvas id="loupe-canvas" width="120" height="120"></canvas>
                 <div class="loupe-crosshair"></div>
@@ -159,12 +206,8 @@
             </div>
           </div>
 
-          <!-- ═════════════════════════════════════════════════════════════════
-               DOCSCANNER BOTTOM SHUTTER DECK
-               ═════════════════════════════════════════════════════════════════ -->
+          <!-- ── DOCSCANNER BOTTOM SHUTTER DECK ── -->
           <div class="doc-shutter-deck" id="doc-shutter-deck">
-            
-            <!-- Mode Selector Carousel -->
             <div class="mode-carousel">
               <span class="mode-item">Photo</span>
               <span class="mode-item">ID Card</span>
@@ -174,21 +217,16 @@
             </div>
 
             <div class="shutter-row">
-              <!-- Left Gallery Badge -->
               <div class="shutter-left">
-                <button id="btn-sample-demo" class="gallery-thumb-btn" title="Load Sample Sheet">
-                  <img id="recent-thumb-img" src="/static/test_sample.png" alt="Thumb">
-                  <span class="thumb-badge" id="scanned-count-badge">1</span>
-                </button>
-                <button id="btn-switch-source" class="mode-toggle-icon" title="Toggle Auto/Manual">
-                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
+                <button id="btn-manual-toggle" class="mode-toggle-icon" title="Toggle Auto/Manual">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
                   <span id="auto-mode-label">AUTO</span>
                 </button>
               </div>
 
-              <!-- Main Cyan Camera Shutter Button -->
+              <!-- Shutter Button -->
               <div class="shutter-center">
-                <button id="btn-manual-capture" class="doc-shutter-btn" title="Take Photo">
+                <button id="btn-manual-capture" class="doc-shutter-btn" title="Snap Photo">
                   <div class="shutter-outer-ring">
                     <div class="shutter-inner-core">
                       <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="#fff" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
@@ -197,10 +235,9 @@
                 </button>
               </div>
 
-              <!-- Right Finish Checkmark Button -->
               <div class="shutter-right">
-                <button id="btn-finish-check" class="finish-check-btn" title="View Results">
-                  <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#fff" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                <button id="btn-close-scanner" class="finish-check-btn" title="Exit Scanner">
+                  <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#fff" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </button>
               </div>
             </div>
@@ -208,29 +245,16 @@
 
         </div>
 
-        <!-- ═══════════════════════════════════════════════════════════════════
-             EVALUATION SCORECARD MODAL / RESULTS PANEL
-             ═══════════════════════════════════════════════════════════════════ -->
-        <div class="panel scorecard-panel">
+        <!-- ── STEP 4: EVALUATION SCORECARD ── -->
+        <div id="scorecard-panel" class="panel scorecard-panel" style="display: none;">
           <div class="panel-header">
             <h2 class="panel-title">Evaluation Scorecard</h2>
-            <button id="btn-scan-next" class="btn-sm" style="display: none;">
-              ➕ Scan Next Sheet
+            <button id="btn-scan-next" class="btn-sm">
+              ➕ Scan Next Student
             </button>
           </div>
 
-          <!-- Empty State -->
-          <div id="scorecard-empty" class="scorecard-empty">
-            <div class="empty-illu">
-              <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-            </div>
-            <h3>Scanner Ready</h3>
-            <p>Align the OMR sheet inside the viewfinder to auto-evaluate and grade.</p>
-          </div>
-
-          <!-- Populated Scorecard Result -->
-          <div id="scorecard-result" class="scorecard-result" style="display: none;">
-            
+          <div id="scorecard-result" class="scorecard-result">
             <div class="score-summary-box">
               <div class="score-main">
                 <div class="score-label">TOTAL SCORE</div>
@@ -284,7 +308,7 @@
             <!-- 50-Question Response Grid -->
             <div class="responses-wrapper">
               <div class="responses-header">
-                <h3>Question Response Grid</h3>
+                <h3>50-Question Response Grid</h3>
                 <div class="legend">
                   <span class="leg-item leg-correct">● Correct</span>
                   <span class="leg-item leg-wrong">● Wrong</span>
@@ -296,6 +320,7 @@
             </div>
           </div>
         </div>
+
       </section>
 
       <!-- ═════════════════════════════════════════════════════════════════════
@@ -344,7 +369,6 @@
                 </div>
               </div>
 
-              <!-- Answer Key Matrix Picker -->
               <div class="answer-key-builder-wrap">
                 <div class="key-builder-head">
                   <label>Define 50-Question Answer Key</label>
@@ -367,7 +391,7 @@
       </section>
 
       <!-- ═════════════════════════════════════════════════════════════════════
-           TAB 3: CLASS ANALYTICS & ITEM HEATMAP
+           TAB 3: CLASS ANALYTICS
            ═════════════════════════════════════════════════════════════════════ -->
       <section id="tab-analytics" class="tab-pane">
         <div class="analytics-header-panel panel">
