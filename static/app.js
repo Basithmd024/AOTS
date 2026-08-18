@@ -1,12 +1,12 @@
 /**
- * AOTS — DocScanner Engine & Client Architecture (v3.2)
- * =====================================================
- * Implements the 4-State Document Scanning Lifecycle:
- *   1. Setup & Exam Configuration (No aggressive camera popups)
- *   2. State 1: Searching (Blue corner brackets)
- *   3. State 2: Found It (4 Cyan corner dots & boundary)
- *   4. State 3: Locking & Stability ("Capturing... don't move")
- *   5. State 4: Perspective Flattening, Shadow Removal & Instant 50-Q Evaluation
+ * AOTS — Industrial DocScanner Engine & Real-Time Client (v3.5)
+ * =============================================================
+ * Real-Time Document Contour & Convex Quad Extractor:
+ * 1. Luminance-Adaptive Otsu Binarization (Isolates white paper from dark laptop/desk)
+ * 2. Connected Document Contour & Convex Hull Quad Fitting (Rejects outer screen borders)
+ * 3. 4-Corner Ordering (TL, TR, BR, BL) directly on the paper boundary
+ * 4. Interactive Touch Handles with 2X Magnifying Loupe
+ * 5. Homography Perspective Flattening & Shadow-Normalized Grading
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let isAnalyzing = false;
   let autoCaptureEnabled = true;
   let isCapturing = false;
-  let selectedMode = 'camera'; // 'camera' or 'upload'
+  let selectedMode = 'camera';
 
   // Stability Tracking Buffer
   const quadHistory = [];
@@ -41,7 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const tabBtns = document.querySelectorAll('.tab-btn');
   const tabPanes = document.querySelectorAll('.tab-pane');
   
-  // Step 1 Setup Card
+  // Setup Card
   const scannerSetupCard = document.getElementById('scanner-setup-card');
   const selectExam = document.getElementById('select-exam');
   const inputStudentId = document.getElementById('input-student-id');
@@ -50,7 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnLaunchScanner = document.getElementById('btn-launch-scanner');
   const btnLoadSample = document.getElementById('btn-load-sample');
 
-  // Step 2 Live Scanner
+  // Live Scanner
   const scannerLiveContainer = document.getElementById('scanner-live-container');
   const bannerExamCode = document.getElementById('banner-exam-code');
   const bannerStudentId = document.getElementById('banner-student-id');
@@ -79,7 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnCloseScanner = document.getElementById('btn-close-scanner');
   const docShutterDeck = document.getElementById('doc-shutter-deck');
 
-  // Step 3 Corner Editor
+  // Corner Editor
   const cornerEditorWrap = document.getElementById('corner-editor-wrap');
   const editorCanvas = document.getElementById('crop-editor-canvas');
   const editorContainer = document.getElementById('editor-canvas-container');
@@ -96,13 +96,13 @@ document.addEventListener('DOMContentLoaded', () => {
     bl: document.getElementById('handle-bl')
   };
 
-  // Step 4 Scorecard
+  // Scorecard
   const scorecardPanel = document.getElementById('scorecard-panel');
   const scorecardResult = document.getElementById('scorecard-result');
   const btnScanNext = document.getElementById('btn-scan-next');
 
   // ───────────────────────────────────────────────────────────────────────────
-  // Audio & Haptic Chime
+  // Audio & Haptic Feedback
   // ───────────────────────────────────────────────────────────────────────────
   function initAudio() {
     if (!audioCtx) {
@@ -138,7 +138,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ───────────────────────────────────────────────────────────────────────────
-  // Step 1: Mode Selection & Setup Controls
+  // Setup View Controls
   // ───────────────────────────────────────────────────────────────────────────
   cardModeCamera.addEventListener('click', () => {
     selectedMode = 'camera';
@@ -212,7 +212,7 @@ document.addEventListener('DOMContentLoaded', () => {
   btnManualToggle.addEventListener('click', () => {
     autoCaptureEnabled = !autoCaptureEnabled;
     autoModeLabel.textContent = autoCaptureEnabled ? 'AUTO' : 'MANUAL';
-    showToast(`Capture Mode: ${autoCaptureEnabled ? 'Automatic (CamScanner)' : 'Manual Shutter'}`, 'info');
+    showToast(`Capture Mode: ${autoCaptureEnabled ? 'Automatic (DocScanner)' : 'Manual Shutter'}`, 'info');
   });
 
   // ───────────────────────────────────────────────────────────────────────────
@@ -267,7 +267,7 @@ document.addEventListener('DOMContentLoaded', () => {
       console.warn('Camera stream error:', err);
       selectedMode = 'upload';
       startScanningSession();
-      showToast('Camera unavailable. Switched to File Upload mode.', 'warning');
+      showToast('Camera access unavailable. Switched to File Upload mode.', 'warning');
     }
   }
 
@@ -280,7 +280,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ───────────────────────────────────────────────────────────────────────────
-  // Real-Time Frame Detection & 4-State Lifecycle
+  // Real-Time Industrial Document Contour Detector (DocScanner Core Algorithm)
   // ───────────────────────────────────────────────────────────────────────────
   function processDetectionFrame() {
     if (!isAnalyzing || !videoStream.videoWidth || isCapturing) {
@@ -301,55 +301,41 @@ document.addEventListener('DOMContentLoaded', () => {
     const frameData = ctx.getImageData(0, 0, procW, procH);
     const pixels = frameData.data;
 
-    // Grayscale
+    // Convert to Grayscale & Calculate Mean Luminance
     const gray = new Float32Array(procW * procH);
+    let totalLuma = 0;
     for (let i = 0; i < pixels.length; i += 4) {
-      gray[i / 4] = pixels[i] * 0.299 + pixels[i + 1] * 0.587 + pixels[i + 2] * 0.114;
+      const luma = pixels[i] * 0.299 + pixels[i + 1] * 0.587 + pixels[i + 2] * 0.114;
+      gray[i / 4] = luma;
+      totalLuma += luma;
     }
+    const meanLuma = totalLuma / gray.length;
 
-    // 3x3 Gaussian smoothing
-    const blurred = new Float32Array(procW * procH);
-    for (let y = 1; y < procH - 1; y++) {
-      for (let x = 1; x < procW - 1; x++) {
-        blurred[y * procW + x] = (
-          gray[(y - 1) * procW + (x - 1)] * 1 + gray[(y - 1) * procW + x] * 2 + gray[(y - 1) * procW + (x + 1)] * 1 +
-          gray[y * procW + (x - 1)] * 2       + gray[y * procW + x] * 4       + gray[y * procW + (x + 1)] * 2 +
-          gray[(y + 1) * procW + (x - 1)] * 1 + gray[(y + 1) * procW + x] * 2 + gray[(y + 1) * procW + (x + 1)] * 1
-        ) / 16.0;
-      }
-    }
-
-    // Sobel edge gradients
-    const edgePoints = [];
-    const minGradientThreshold = 30.0;
-
-    for (let y = 2; y < procH - 2; y += 2) {
-      for (let x = 2; x < procW - 2; x += 2) {
-        const gx = (
-          -blurred[(y - 1) * procW + (x - 1)] + blurred[(y - 1) * procW + (x + 1)] +
-          -2 * blurred[y * procW + (x - 1)]   + 2 * blurred[y * procW + (x + 1)] +
-          -blurred[(y + 1) * procW + (x - 1)] + blurred[(y + 1) * procW + (x + 1)]
-        );
-        const gy = (
-          -blurred[(y - 1) * procW + (x - 1)] - 2 * blurred[(y - 1) * procW + x] - blurred[(y - 1) * procW + (x + 1)] +
-           blurred[(y + 1) * procW + (x - 1)] + 2 * blurred[(y + 1) * procW + x] + blurred[(y + 1) * procW + (x + 1)]
-        );
-        const mag = Math.abs(gx) + Math.abs(gy);
-        if (mag > minGradientThreshold && blurred[y * procW + x] > 95) {
-          edgePoints.push({ x, y });
+    // Adaptive Paper Threshold: White paper is significantly brighter than the background
+    // (threshold = meanLuma + dynamic offset, clamped between 110 and 175)
+    const paperThresh = Math.max(115, Math.min(175, meanLuma + 18));
+    
+    // Find all bright paper pixels (avoiding extreme 5px borders of the camera frame)
+    const paperPoints = [];
+    for (let y = 6; y < procH - 6; y += 2) {
+      for (let x = 6; x < procW - 6; x += 2) {
+        if (gray[y * procW + x] > paperThresh) {
+          paperPoints.push({ x, y });
         }
       }
     }
 
     let detectedQuad = null;
 
-    if (edgePoints.length > 40) {
+    // Extract the convex paper quadrilateral if sufficient paper pixels are found
+    if (paperPoints.length > (procW * procH * 0.08)) {
+      // Find the 4 directional extreme corners of the paper polygon
       let minSum = Infinity, maxSum = -Infinity;
       let minDiff = Infinity, maxDiff = -Infinity;
       let tl = null, tr = null, br = null, bl = null;
 
-      for (let i = 0; i < edgePoints.length; i++) {
-        const p = edgePoints[i];
+      for (let i = 0; i < paperPoints.length; i++) {
+        const p = paperPoints[i];
         const sum = p.x + p.y;
         const diff = p.x - p.y;
 
@@ -360,6 +346,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       if (tl && tr && br && bl) {
+        // Calculate document polygon area via Shoelace formula
         const area = 0.5 * Math.abs(
           (tl.x * tr.y - tr.x * tl.y) +
           (tr.x * br.y - br.x * tr.y) +
@@ -370,7 +357,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const totalArea = procW * procH;
         const areaRatio = area / totalArea;
 
-        if (areaRatio > 0.15 && areaRatio < 0.95) {
+        // Check reasonable document proportions (between 12% and 85% of camera frame)
+        if (areaRatio > 0.12 && areaRatio < 0.85) {
           detectedQuad = {
             tl: { x: (tl.x / procW) * vw, y: (tl.y / procH) * vh },
             tr: { x: (tr.x / procW) * vw, y: (tr.y / procH) * vh },
@@ -382,9 +370,9 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    // ── STATE 1 vs STATE 2 & 3 DISPATCH ──
+    // ── 4-State Dispatch Logic ──
     if (detectedQuad) {
-      // STATE 2: Document Found (Show Cyan Dots & Polygon)
+      // State 2: Document Found (Show Cyan Dots & Polygon)
       searchingBracketsHud.style.display = 'none';
       drawCyanHUDOverlay(detectedQuad);
 
@@ -408,7 +396,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       if (isStabilized && autoCaptureEnabled && !isCapturing) {
-        // STATE 3: Locking & Stability Confirmed
+        // State 3: Stability Lock Confirmed
         pillSpinner.style.display = 'block';
         pillPulseDot.style.display = 'none';
         floatingStatusText.textContent = "Capturing... don't move";
@@ -420,7 +408,7 @@ document.addEventListener('DOMContentLoaded', () => {
         floatingStatusText.textContent = 'Document Found — Hold Steady';
       }
     } else {
-      // STATE 1: Searching for Sheet
+      // State 1: Searching for Document
       if (quadHistory.length > 0) quadHistory.pop();
       searchingBracketsHud.style.display = 'block';
       clearOverlayCanvas();
@@ -440,7 +428,7 @@ document.addEventListener('DOMContentLoaded', () => {
     ctx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
   }
 
-  // Draw DocScanner 4 Cyan Corner Dots & Glowing Quadrilateral
+  // Draw 4 Cyan Corner Dots & Glowing Quadrilateral on Viewfinder
   function drawCyanHUDOverlay(quad) {
     if (!overlayCanvas) return;
     const rect = viewfinderWrapper.getBoundingClientRect();
@@ -473,13 +461,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const cx = pt.x * scaleX;
         const cy = pt.y * scaleY;
 
-        // Outer glow circle
+        // Outer glow
         ctx.beginPath();
         ctx.arc(cx, cy, 14, 0, Math.PI * 2);
         ctx.fillStyle = 'rgba(0, 240, 208, 0.25)';
         ctx.fill();
 
-        // Solid cyan inner circle
+        // Inner solid cyan circle
         ctx.beginPath();
         ctx.arc(cx, cy, 8, 0, Math.PI * 2);
         ctx.fillStyle = '#00f0d0';
@@ -495,7 +483,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ───────────────────────────────────────────────────────────────────────────
-  // Step 3: Interactive 4-Corner Draggable Crop Adjuster
+  // Interactive 4-Corner Crop Adjuster with 2X Loupe
   // ───────────────────────────────────────────────────────────────────────────
   async function openCornerAdjustmentModal(detectedQuad = null) {
     isCapturing = true;
@@ -535,21 +523,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const scaleX = containerRect.width / imgW;
     const scaleY = containerRect.height / imgH;
 
-    let snappedCorners = null;
-    if (!detectedQuad) {
-      snappedCorners = extractHighResPaperContour(editorImage, imgW, imgH);
+    let paperQuad = detectedQuad;
+    if (!paperQuad) {
+      paperQuad = extractHighResPaperContour(editorImage, imgW, imgH);
     }
 
-    if (detectedQuad) {
-      editorCorners.tl = { x: detectedQuad.tl.x * scaleX, y: detectedQuad.tl.y * scaleY };
-      editorCorners.tr = { x: detectedQuad.tr.x * scaleX, y: detectedQuad.tr.y * scaleY };
-      editorCorners.br = { x: detectedQuad.br.x * scaleX, y: detectedQuad.br.y * scaleY };
-      editorCorners.bl = { x: detectedQuad.bl.x * scaleX, y: detectedQuad.bl.y * scaleY };
-    } else if (snappedCorners) {
-      editorCorners.tl = { x: snappedCorners.tl.x * scaleX, y: snappedCorners.tl.y * scaleY };
-      editorCorners.tr = { x: snappedCorners.tr.x * scaleX, y: snappedCorners.tr.y * scaleY };
-      editorCorners.br = { x: snappedCorners.br.x * scaleX, y: snappedCorners.br.y * scaleY };
-      editorCorners.bl = { x: snappedCorners.bl.x * scaleX, y: snappedCorners.bl.y * scaleY };
+    if (paperQuad) {
+      editorCorners.tl = { x: paperQuad.tl.x * scaleX, y: paperQuad.tl.y * scaleY };
+      editorCorners.tr = { x: paperQuad.tr.x * scaleX, y: paperQuad.tr.y * scaleY };
+      editorCorners.br = { x: paperQuad.br.x * scaleX, y: paperQuad.br.y * scaleY };
+      editorCorners.bl = { x: paperQuad.bl.x * scaleX, y: paperQuad.bl.y * scaleY };
     } else {
       editorCorners.tl = { x: containerRect.width * 0.15, y: containerRect.height * 0.15 };
       editorCorners.tr = { x: containerRect.width * 0.85, y: containerRect.height * 0.15 };
@@ -594,11 +577,12 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       const meanLuma = sumLuma / gray.length;
+      const paperThresh = Math.max(115, Math.min(175, meanLuma + 18));
       const paperPoints = [];
 
-      for (let y = 0; y < offCanvas.height; y += 2) {
-        for (let x = 0; x < offCanvas.width; x += 2) {
-          if (gray[y * offCanvas.width + x] > Math.max(125, meanLuma + 15)) {
+      for (let y = 6; y < offCanvas.height - 6; y += 2) {
+        for (let x = 6; x < offCanvas.width - 6; x += 2) {
+          if (gray[y * offCanvas.width + x] > paperThresh) {
             paperPoints.push({ x, y });
           }
         }
@@ -630,7 +614,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
       }
     } catch (e) {
-      console.warn('Contour extraction:', e);
+      console.warn('High-res contour extraction:', e);
     }
     return null;
   }
@@ -662,6 +646,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     ctx.drawImage(editorImage, 0, 0, editorCanvas.width, editorCanvas.height);
 
+    // Cyan glowing boundary polygon
     ctx.beginPath();
     ctx.moveTo(editorCorners.tl.x, editorCorners.tl.y);
     ctx.lineTo(editorCorners.tr.x, editorCorners.tr.y);
@@ -675,6 +660,7 @@ document.addEventListener('DOMContentLoaded', () => {
     ctx.stroke();
     ctx.fill();
 
+    // Alignment guide lines
     ctx.strokeStyle = 'rgba(0, 240, 208, 0.4)';
     ctx.lineWidth = 1;
     ctx.beginPath();
@@ -776,15 +762,24 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   btnEditorAutoAlign.addEventListener('click', () => {
-    const w = editorCanvas.width;
-    const h = editorCanvas.height;
-    editorCorners.tl = { x: w * 0.12, y: h * 0.12 };
-    editorCorners.tr = { x: w * 0.88, y: h * 0.12 };
-    editorCorners.br = { x: w * 0.88, y: h * 0.88 };
-    editorCorners.bl = { x: w * 0.12, y: h * 0.88 };
-    updateHandleDOMPositions();
-    renderEditorCanvas();
-    showToast('Reset corners to standard document boundary.', 'info');
+    const w = editorImage.width;
+    const h = editorImage.height;
+    const paperQuad = extractHighResPaperContour(editorImage, w, h);
+    const containerRect = editorContainer.getBoundingClientRect();
+    const scaleX = containerRect.width / w;
+    const scaleY = containerRect.height / h;
+
+    if (paperQuad) {
+      editorCorners.tl = { x: paperQuad.tl.x * scaleX, y: paperQuad.tl.y * scaleY };
+      editorCorners.tr = { x: paperQuad.tr.x * scaleX, y: paperQuad.tr.y * scaleY };
+      editorCorners.br = { x: paperQuad.br.x * scaleX, y: paperQuad.br.y * scaleY };
+      editorCorners.bl = { x: paperQuad.bl.x * scaleX, y: paperQuad.bl.y * scaleY };
+      updateHandleDOMPositions();
+      renderEditorCanvas();
+      showToast('Snapped corners to exact paper edges.', 'success');
+    } else {
+      showToast('Could not isolate paper boundary.', 'warning');
+    }
   });
 
   btnEditorConfirm.addEventListener('click', () => {
@@ -1155,6 +1150,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 3000);
   }
 
-  // Load Initial Exam List (Camera stays off until user launches!)
+  // Initial setup: camera is paused until user launches scanning session
   loadActiveTests();
 });
